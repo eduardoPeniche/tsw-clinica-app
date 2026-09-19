@@ -9,9 +9,8 @@ dependencias de Python en el equipo local.
 docker compose up --build
 ```
 
-Por ahora, el contenedor imprime `Hello from clinica-app!` y termina. Más
-adelante, al incorporar los endpoints, se configurará el servidor de FastAPI
-para que permanezca disponible en el puerto `8000`.
+La API queda disponible en `http://localhost:8000`; la documentación
+interactiva está en `http://localhost:8000/docs`.
 
 ## Ejecutar pruebas
 

@@ -115,8 +115,8 @@ registrado aquí.
 | --- | --- | --- |
 | 1. Base del proyecto | Repositorio Git, estructura inicial y documentación. | Completado |
 | 2. Entidades y persistencia | Modelos y base de datos persistente para pacientes, médicos y citas. | Pendiente |
-| 3. CRUD principal | Operaciones completas de pacientes y médicos. | Pendiente |
-| 4. Gestión de citas | Creación, cancelación y consultas por médico o paciente. | Pendiente |
+| 3. CRUD principal | Operaciones completas de pacientes y médicos. | Completado |
+| 4. Gestión de citas | Creación, cancelación y consultas por médico o paciente. | Completado |
 | 5. Validación de agenda | Primera implementación de la regla de disponibilidad del médico. | Pendiente |
 | 6. Entorno reproducible | Docker, Docker Compose, pruebas y README de ejecución. | Pendiente |
 

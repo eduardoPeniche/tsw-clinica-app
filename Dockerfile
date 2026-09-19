@@ -18,4 +18,4 @@ RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 
-CMD ["clinica-app"]
+CMD ["fastapi", "run", "src/clinica_app/main.py", "--host", "0.0.0.0", "--port", "8000"]
