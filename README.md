@@ -12,6 +12,16 @@ docker compose up --build
 La API queda disponible en `http://localhost:8000`; la documentación
 interactiva está en `http://localhost:8000/docs`.
 
+## Endpoints principales
+
+| Recurso | Operaciones |
+| --- | --- |
+| Pacientes | `POST /pacientes`, `GET /pacientes`, `GET/PUT/DELETE /pacientes/{id}` |
+| Médicos | `POST /medicos`, `GET /medicos`, `GET/PUT/DELETE /medicos/{id}` |
+| Citas | `POST /citas`, `PATCH /citas/{id}/cancelacion`, `GET /medicos/{id}/citas`, `GET /pacientes/{id}/citas` |
+
+Una segunda cita activa para el mismo médico y fecha/hora devuelve `409 Conflict`.
+
 ## Ejecutar pruebas
 
 ```bash

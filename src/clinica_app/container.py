@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
 from clinica_app.adapters.persistence.sqlite.database import SQLiteDatabase
@@ -43,7 +44,7 @@ class ApplicationContainer:
     listar_citas_por_paciente: ListarCitasPorPaciente
 
 
-def build_container(database_path: str | None = None) -> ApplicationContainer:
+def build_container(database_path: str | Path | None = None) -> ApplicationContainer:
     path = database_path or os.getenv("DATABASE_PATH", "/data/clinica.db")
     database = SQLiteDatabase(path)
     database.initialize()
