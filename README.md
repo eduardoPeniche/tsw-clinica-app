@@ -16,8 +16,14 @@ dependencias de Python en el equipo local.
 docker compose up --build
 ```
 
+Compose es el entorno de desarrollo: ambos servicios observan los cambios en
+sus carpetas de código y se recargan automáticamente. Para imágenes de
+producción se usarán los Dockerfiles directamente, sin los montajes de código.
+
 La API queda disponible en `http://localhost:8000`; la documentación
 interactiva está en `http://localhost:8000/docs`.
+
+El frontend Astro queda disponible en `http://localhost:4321`.
 
 ## Endpoints principales
 

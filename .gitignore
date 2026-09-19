@@ -17,6 +17,11 @@ htmlcov/
 .tox/
 .nox/
 
+# Dependencias y build de Node/Astro
+node_modules/
+dist/
+.astro/
+
 # Configuración local y secretos
 .env
 .env.*

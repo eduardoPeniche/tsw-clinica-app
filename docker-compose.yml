@@ -4,10 +4,23 @@ services:
       context: ./backend
     ports:
       - "8000:8000"
+    command: fastapi dev src/clinica_app/main.py --host 0.0.0.0 --port 8000
     volumes:
+      - ./backend:/app
       - clinica_data:/data
     environment:
       DATABASE_PATH: /data/clinica.db
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "4321:4321"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
 
 volumes:
   clinica_data:
