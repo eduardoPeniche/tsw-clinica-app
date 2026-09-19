@@ -1,5 +1,12 @@
 # Sistema de gestión de citas médicas
 
+## Estructura
+
+```text
+backend/   API FastAPI, SQLite, pruebas y dependencias Python
+frontend/  Interfaz web Astro
+```
+
 ## Ejecutar con Docker
 
 La aplicación se ejecuta desde un contenedor; no es necesario instalar las
