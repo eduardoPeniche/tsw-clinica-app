@@ -1,0 +1,18 @@
+[project]
+name = "clinica-app"
+version = "0.1.0"
+description = "Add your description here"
+authors = [
+    { name = "Eduardo Peniche", email = "148513763+eduardoPeniche@users.noreply.github.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard-no-fastapi-cloud-cli]==0.141.1",
+]
+
+[project.scripts]
+clinica-app = "clinica_app:main"
+
+[build-system]
+requires = ["uv_build>=0.12.16,<0.13.0"]
+build-backend = "uv_build"

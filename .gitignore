@@ -1,0 +1,34 @@
+# Entornos y caché de Python/uv
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.uv/
+
+# Herramientas de pruebas y análisis
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.tox/
+.nox/
+
+# Configuración local y secretos
+.env
+.env.*
+!.env.example
+
+# Archivos del sistema y editores
+.DS_Store
+.idea/
+.vscode/
+.ropeproject/
+*.swp
+*~
+
+# Herramientas locales de agentes
+.agents/
