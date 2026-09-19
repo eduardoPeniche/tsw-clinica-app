@@ -1,0 +1,139 @@
+# Sistema de gestión de citas médicas
+
+## Propósito del proyecto
+
+Construir el esqueleto funcional de una aplicación para gestionar pacientes,
+médicos y sus citas. El proyecto servirá como base para practicar decisiones de
+arquitectura, persistencia, pruebas automatizadas y despliegue con Docker.
+
+Este documento es el registro vivo del proyecto: además de describir lo que se
+debe construir, irá documentando las decisiones tomadas, su justificación y el
+estado de cada requisito.
+
+## Alcance de la primera entrega
+
+Para la próxima sesión, el repositorio debe poder levantarse con un único
+comando (`docker-compose up`) y ofrecer las operaciones mínimas indicadas más
+abajo. La interfaz web es opcional; la API o el mecanismo elegido debe quedar
+operativo y verificable.
+
+## Modelo funcional
+
+### Pacientes
+
+Se debe administrar la información básica de cada paciente:
+
+| Campo | Descripción |
+| --- | --- |
+| Nombre | Nombre completo del paciente. |
+| Fecha de nacimiento | Fecha de nacimiento del paciente. |
+| Contacto | Medio de contacto, por ejemplo teléfono o correo electrónico. |
+
+Operaciones requeridas: crear, consultar, listar, actualizar y eliminar
+pacientes.
+
+### Médicos
+
+Se debe administrar la información básica de cada médico:
+
+| Campo | Descripción |
+| --- | --- |
+| Nombre | Nombre completo del médico. |
+| Especialidad | Área médica en la que atiende. |
+
+Operaciones requeridas: crear, consultar, listar, actualizar y eliminar
+médicos.
+
+### Citas
+
+Cada cita relaciona a un paciente con un médico en una fecha y hora definidas.
+
+| Campo | Descripción |
+| --- | --- |
+| Paciente | Paciente que recibirá la atención. |
+| Médico | Médico que brindará la atención. |
+| Fecha y hora | Momento programado para la cita. |
+| Estado | `pendiente`, `confirmada` o `cancelada`. |
+
+Operaciones requeridas:
+
+- Crear una cita.
+- Cancelar una cita.
+- Consultar las citas asignadas a un médico.
+- Consultar las citas de un paciente.
+
+## Regla de negocio prioritaria
+
+No se debe permitir registrar una cita cuando el médico ya tiene otra cita en
+el mismo horario.
+
+Esta regla debe validarse antes de crear la cita y, cuando exista un conflicto,
+el sistema debe responder de manera clara para que la persona usuaria entienda
+que el horario no está disponible. La definición concreta del horario, el
+tratamiento de citas canceladas, la protección ante solicitudes simultáneas y
+la ubicación de la validación dentro de la arquitectura se documentarán como
+decisiones del proyecto.
+
+## Requisitos técnicos obligatorios
+
+- El backend se implementará en Python. Se puede usar FastAPI u otro framework
+  que permita ejecutar pruebas automatizadas.
+- Los datos deben almacenarse de forma persistente; una base de datos SQLite es
+  una opción válida para el inicio.
+- El proyecto incluirá un `Dockerfile` y un `docker-compose.yml` para levantar
+  la solución con un solo comando.
+- El código se controlará con Git mediante commits pequeños e incrementales que
+  reflejen avances reales.
+- El repositorio incluirá un `README.md` con los requisitos y pasos necesarios
+  para ejecutar el proyecto.
+
+## Decisiones abiertas
+
+Estas decisiones se resolverán durante el desarrollo y su resultado quedará
+registrado aquí.
+
+| Tema | Decisión | Justificación | Estado |
+| --- | --- | --- | --- |
+| Framework del backend | FastAPI `0.141.1` con Python 3.14. | Permite crear una API en Python y ejecutar pruebas automatizadas. | Aceptada |
+| Motor y modelo de persistencia | Pendiente |  | Pendiente |
+| Organización de capas y carpetas | Arquitectura hexagonal organizada por tipo técnico. | Hace explícitos los límites entre entidades, casos de uso, puertos y adaptadores; es adecuada para aprender este estilo. | Aceptada |
+| Organización de casos de uso | Un archivo por acción del sistema. | Mantiene cada operación pequeña, explícita y fácil de probar. | Aceptada |
+| Diseño de la API | Pendiente |  | Pendiente |
+| Duración y formato de los horarios | Pendiente |  | Pendiente |
+| Citas que bloquean un horario | Pendiente |  | Pendiente |
+| Estrategia contra citas simultáneas | Pendiente |  | Pendiente |
+| Frontend | Pendiente |  | Pendiente |
+| Ejecución en contenedor | Imagen Python 3.14 con dependencias sincronizadas mediante `uv` dentro de Docker. | Permite ejecutar el proyecto sin instalar dependencias Python en el equipo local. | Aceptada |
+
+## Plan de avance
+
+| Hito | Resultado esperado | Estado |
+| --- | --- | --- |
+| 1. Base del proyecto | Repositorio Git, estructura inicial y documentación. | Completado |
+| 2. Entidades y persistencia | Modelos y base de datos persistente para pacientes, médicos y citas. | Pendiente |
+| 3. CRUD principal | Operaciones completas de pacientes y médicos. | Pendiente |
+| 4. Gestión de citas | Creación, cancelación y consultas por médico o paciente. | Pendiente |
+| 5. Validación de agenda | Primera implementación de la regla de disponibilidad del médico. | Pendiente |
+| 6. Entorno reproducible | Docker, Docker Compose, pruebas y README de ejecución. | Pendiente |
+
+## Bitácora de decisiones
+
+Agregaremos aquí cada acuerdo relevante con fecha, contexto y consecuencia en
+la implementación.
+
+| Fecha | Decisión | Contexto y justificación |
+| --- | --- | --- |
+| 2026-09-18 | Se adopta arquitectura hexagonal organizada por tipo técnico. | La regla de disponibilidad de citas debe poder probarse sin depender de FastAPI ni SQLite. Esta variante hace visibles sus límites principales. El detalle está en `docs/adr/001-arquitectura-hexagonal.md`. |
+| 2026-09-18 | Se organizarán los casos de uso en un archivo por acción. | Por ejemplo, `crear_cita.py` y `cancelar_cita.py` serán independientes. |
+| 2026-09-19 | Se adopta FastAPI `0.141.1` con Python 3.14. | Es el framework seleccionado para el backend. |
+| 2026-09-19 | El proyecto se ejecutará con Docker Compose. | El contenedor usa Python 3.14 y `uv sync --frozen` para instalar dentro de la imagen las versiones fijadas en `uv.lock`. |
+
+## Criterios de aceptación de la primera entrega
+
+- La aplicación inicia usando `docker-compose up`.
+- Pacientes y médicos se pueden crear, consultar, listar, actualizar y eliminar.
+- Se pueden crear y cancelar citas.
+- Se pueden consultar las citas de un paciente y las asignadas a un médico.
+- El sistema rechaza, al menos en el caso básico, una segunda cita para un mismo
+  médico en la misma fecha y hora.
+- La ejecución del proyecto está explicada en el `README.md`.
