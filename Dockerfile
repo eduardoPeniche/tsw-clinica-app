@@ -1,0 +1,20 @@
+FROM python:3.14-slim
+
+COPY --from=ghcr.io/astral-sh/uv:0.12.16 /uv /uvx /bin/
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
+    PATH="/app/.venv/bin:$PATH"
+
+COPY pyproject.toml uv.lock ./
+COPY src ./src
+
+# La instalación ocurre dentro de la imagen y usa las versiones fijadas en uv.lock.
+RUN uv sync --frozen --no-dev
+
+EXPOSE 8000
+
+CMD ["clinica-app"]
