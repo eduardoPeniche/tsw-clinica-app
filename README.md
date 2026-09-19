@@ -12,3 +12,9 @@ docker compose up --build
 Por ahora, el contenedor imprime `Hello from clinica-app!` y termina. Más
 adelante, al incorporar los endpoints, se configurará el servidor de FastAPI
 para que permanezca disponible en el puerto `8000`.
+
+## Ejecutar pruebas
+
+```bash
+docker compose run --rm api python -m unittest discover -s tests
+```

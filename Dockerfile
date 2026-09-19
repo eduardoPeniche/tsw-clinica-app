@@ -11,6 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY pyproject.toml uv.lock ./
 COPY src ./src
+COPY tests ./tests
 
 # La instalación ocurre dentro de la imagen y usa las versiones fijadas en uv.lock.
 RUN uv sync --frozen --no-dev
