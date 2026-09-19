@@ -1,0 +1,3 @@
+dist/
+.astro/
+src/lib/api/generated/
