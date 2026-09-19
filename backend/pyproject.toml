@@ -16,3 +16,8 @@ clinica-app = "clinica_app:main"
 [build-system]
 requires = ["uv_build>=0.12.16,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx2==2.13.0",
+]
