@@ -21,6 +21,8 @@ services:
       - /app/node_modules
     depends_on:
       - api
+    environment:
+      OPENAPI_URL: http://api:8000/openapi.json
 
 volumes:
   clinica_data:

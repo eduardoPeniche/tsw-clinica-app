@@ -40,3 +40,16 @@ Una segunda cita activa para el mismo médico y fecha/hora devuelve `409 Conflic
 ```bash
 docker compose run --rm api python -m unittest discover -s tests
 ```
+
+## Generar tipos del frontend
+
+Con la API levantada, genera los tipos TypeScript desde OpenAPI:
+
+```bash
+cd frontend
+OPENAPI_URL=http://localhost:8000/openapi.json npm run generate:api
+```
+
+Dentro de Docker, `OPENAPI_URL` se configura automáticamente como
+`http://api:8000/openapi.json`. El archivo generado se versiona y se regenera
+cuando cambian los esquemas de FastAPI.
