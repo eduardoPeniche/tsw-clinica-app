@@ -107,19 +107,19 @@ app/
       medico_repository.py
       cita_repository.py
     use_cases/                    # Un archivo por acción del sistema.
-      crear_paciente.py
-      obtener_paciente.py
-      listar_pacientes.py
-      actualizar_paciente.py
-      eliminar_paciente.py
-      crear_medico.py
-      obtener_medico.py
-      listar_medicos.py
-      actualizar_medico.py
-      eliminar_medico.py
-      crear_cita.py               # Comprueba disponibilidad del médico.
-      cancelar_cita.py
-      listar_citas_por_medico.py
+      paciente_crear.py
+      paciente_obtener.py
+      paciente_listar.py
+      paciente_actualizar.py
+      paciente_eliminar.py
+      medico_crear.py
+      medico_obtener.py
+      medico_listar.py
+      medico_actualizar.py
+      medico_eliminar.py
+      cita_crear.py               # Comprueba disponibilidad del médico.
+      cita_cancelar.py
+      cita_listar_por_medico.py
       listar_citas_por_paciente.py
   adapters/                       # Implementaciones para el mundo exterior.
     http/
@@ -195,10 +195,10 @@ app/
       cita.py
   application/
     use_cases/
-      crear_paciente.py
-      crear_medico.py
-      crear_cita.py
-      cancelar_cita.py
+      paciente_crear.py
+      medico_crear.py
+      cita_crear.py
+      cita_cancelar.py
     ports/
       paciente_repository.py
       medico_repository.py
@@ -253,16 +253,20 @@ application/
     medico_repository.py
     cita_repository.py
   use_cases/
-    crear_paciente.py
-    listar_pacientes.py
-    obtener_paciente.py
-    actualizar_paciente.py
-    eliminar_paciente.py
+    paciente_crear.py
+    paciente_listar.py
+    paciente_obtener.py
+    paciente_actualizar.py
+    paciente_eliminar.py
 ```
+
+Los archivos de casos de uso siguen el patrón `entidad_accion`. Esto conserva la
+organización por tipo técnico —todos pertenecen a `use_cases`— y hace que las
+operaciones de cada entidad queden agrupadas visualmente.
 
 Por ejemplo, `PacienteRepository` declara las operaciones `guardar`,
 `obtener_por_id`, `listar`, `actualizar` y `eliminar`. El caso de uso
-`crear_paciente` depende de ese contrato, no de SQLite.
+`paciente_crear` depende de ese contrato, no de SQLite.
 
 `CitaRepository` declara las consultas por paciente y médico, además de
 `medico_tiene_cita_activa`. El caso de uso `crear_cita` usará esta última
@@ -283,6 +287,10 @@ Ese adaptador cumple los puertos mediante SQLite. Así se obtiene persistencia
 real sin introducir SQL en las entidades o en los casos de uso. Finalmente,
 las rutas FastAPI son adaptadores de entrada: convierten una petición HTTP en
 una llamada a un caso de uso y convierten su resultado en una respuesta HTTP.
+
+La cancelación de una cita será idempotente. El caso de uso obtiene la cita,
+invoca `cita.cancelar()` y la actualiza mediante el repositorio. Si la cita ya
+estaba cancelada, el método conserva ese estado y no genera un error.
 
 ### Por qué usamos `Protocol` para los puertos
 

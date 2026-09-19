@@ -17,3 +17,7 @@ class Cita:
     fecha_hora: datetime
     estado: EstadoCita = EstadoCita.PENDIENTE
     id: UUID = field(default_factory=uuid4)
+
+    def cancelar(self) -> None:
+        """Cancela la cita; repetir la operación no produce un error."""
+        self.estado = EstadoCita.CANCELADA

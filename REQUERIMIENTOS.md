@@ -100,6 +100,8 @@ registrado aquí.
 | Motor y modelo de persistencia | Pendiente |  | Pendiente |
 | Organización de capas y carpetas | Arquitectura hexagonal organizada por tipo técnico. | Hace explícitos los límites entre entidades, casos de uso, puertos y adaptadores; es adecuada para aprender este estilo. | Aceptada |
 | Organización de casos de uso | Un archivo por acción del sistema. | Mantiene cada operación pequeña, explícita y fácil de probar. | Aceptada |
+| Nombres de casos de uso | Patrón `entidad_accion`, por ejemplo `paciente_crear.py`. | Mantiene los archivos agrupados visualmente por entidad dentro de la capa técnica `use_cases`. | Aceptada |
+| Cancelación de citas | Operación idempotente. | Repetir una cancelación deja la cita en estado `cancelada` sin generar error. | Aceptada |
 | Diseño de la API | Pendiente |  | Pendiente |
 | Duración y formato de los horarios | Pendiente |  | Pendiente |
 | Citas que bloquean un horario | Pendiente |  | Pendiente |
@@ -127,6 +129,8 @@ la implementación.
 | --- | --- | --- |
 | 2026-09-18 | Se adopta arquitectura hexagonal organizada por tipo técnico. | La regla de disponibilidad de citas debe poder probarse sin depender de FastAPI ni SQLite. Esta variante hace visibles sus límites principales. El detalle está en `docs/adr/001-arquitectura-hexagonal.md`. |
 | 2026-09-18 | Se organizarán los casos de uso en un archivo por acción. | Por ejemplo, `crear_cita.py` y `cancelar_cita.py` serán independientes. |
+| 2026-09-19 | Los archivos de casos de uso usarán el patrón `entidad_accion`. | Por ejemplo, `paciente_crear.py` y `medico_eliminar.py`; todos permanecen en `application/use_cases`. |
+| 2026-09-19 | La cancelación de citas será idempotente. | Una cita ya cancelada permanece cancelada si la operación se repite. |
 | 2026-09-19 | Se adopta FastAPI `0.141.1` con Python 3.14. | Es el framework seleccionado para el backend. |
 | 2026-09-19 | El proyecto se ejecutará con Docker Compose. | El contenedor usa Python 3.14 y `uv sync --frozen` para instalar dentro de la imagen las versiones fijadas en `uv.lock`. |
 | 2026-09-19 | Las entidades de dominio usarán `dataclasses` e identificadores UUID. | Permite modelarlas con Python estándar sin acoplarlas al ORM o a FastAPI. |
