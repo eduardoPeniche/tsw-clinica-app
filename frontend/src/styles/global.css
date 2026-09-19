@@ -55,6 +55,9 @@ p {
 	gap: 1rem;
 	margin-bottom: 1.75rem;
 }
+.cita-form {
+	grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+}
 .entity-form label,
 .appointments-heading label {
 	display: grid;

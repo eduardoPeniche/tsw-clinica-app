@@ -1,4 +1,11 @@
-import { api, ApiError, type Cita, type Medico, type Paciente } from '../lib/api/client';
+import {
+	api,
+	ApiError,
+	type Cita,
+	type DisponibilidadAgenda,
+	type Medico,
+	type Paciente,
+} from '../lib/api/client';
 
 const pacientesBody = byId<HTMLTableSectionElement>('pacientes-body');
 const medicosBody = byId<HTMLTableSectionElement>('medicos-body');
@@ -8,10 +15,23 @@ const medicoForm = byId<HTMLFormElement>('medico-form');
 const citaForm = byId<HTMLFormElement>('cita-form');
 const citaPaciente = byId<HTMLSelectElement>('cita-paciente');
 const citaMedico = byId<HTMLSelectElement>('cita-medico');
+const citaFecha = byId<HTMLSelectElement>('cita-fecha');
+const citaHora = byId<HTMLSelectElement>('cita-hora');
 const notice = byId<HTMLParagraphElement>('notice');
 
 let pacientes: Paciente[] = [];
 let medicos: Medico[] = [];
+const CLINIC_TIME_ZONE = 'America/Merida';
+const BUSINESS_DAY_COUNT = 60;
+
+type DateTimeParts = {
+	day: string;
+	hour: string;
+	minute: string;
+	month: string;
+	second: string;
+	year: string;
+};
 
 function byId<T extends HTMLElement>(id: string): T {
 	const element = document.getElementById(id);
@@ -21,6 +41,29 @@ function byId<T extends HTMLElement>(id: string): T {
 
 function value(data: FormData, key: string): string {
 	return String(data.get(key) ?? '').trim();
+}
+
+function clinicDateTimeParts(value: Date | string): DateTimeParts {
+	const parts = new Intl.DateTimeFormat('en-US', {
+		day: '2-digit',
+		hour: '2-digit',
+		hourCycle: 'h23',
+		hour12: false,
+		minute: '2-digit',
+		month: '2-digit',
+		second: '2-digit',
+		timeZone: CLINIC_TIME_ZONE,
+		year: 'numeric',
+	}).formatToParts(new Date(value));
+
+	return Object.fromEntries(
+		parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]),
+	) as DateTimeParts;
+}
+
+function clinicDate(value: Date | string): string {
+	const parts = clinicDateTimeParts(value);
+	return `${parts.year}-${parts.month}-${parts.day}`;
 }
 
 function showNotice(message: string, isError = false): void {
@@ -119,6 +162,53 @@ function renderSelects(): void {
 		label: `${item.nombre} · ${item.especialidad}`,
 	}));
 	options(citaMedico, doctorOptions, 'Selecciona un médico');
+	renderFechasDeAtencion();
+}
+
+function renderFechasDeAtencion(): void {
+	const selected = citaFecha.value;
+	const today = clinicDateTimeParts(new Date());
+	const cursor = new Date(Date.UTC(Number(today.year), Number(today.month) - 1, Number(today.day)));
+	const formatter = new Intl.DateTimeFormat('es-MX', {
+		day: 'numeric',
+		month: 'long',
+		timeZone: 'UTC',
+		weekday: 'long',
+	});
+	const fechas: Array<{ label: string; value: string }> = [];
+
+	while (fechas.length < BUSINESS_DAY_COUNT) {
+		const dayOfWeek = cursor.getUTCDay();
+		if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+			fechas.push({
+				label: formatter.format(cursor),
+				value: cursor.toISOString().slice(0, 10),
+			});
+		}
+		cursor.setUTCDate(cursor.getUTCDate() + 1);
+	}
+
+	citaFecha.replaceChildren();
+	for (const fecha of fechas) citaFecha.add(new Option(fecha.label, fecha.value));
+	citaFecha.value = fechas.some((fecha) => fecha.value === selected) ? selected : fechas[0].value;
+}
+
+function renderSlotsDisponibles(disponibilidad: DisponibilidadAgenda): void {
+	citaHora.replaceChildren();
+	for (const slot of disponibilidad.slots) {
+		const ocupado = slot.estado === 'ocupado';
+		const option = new Option(
+			`${slot.inicio} – ${slot.fin}${ocupado ? ' · ocupado' : ''}`,
+			slot.inicio,
+		);
+		option.disabled = ocupado;
+		citaHora.add(option);
+	}
+	citaHora.value = disponibilidad.slot_recomendado ?? '';
+}
+
+function limpiarSlots(): void {
+	citaHora.replaceChildren(new Option('Selecciona un médico y una fecha', ''));
 }
 
 function renderCitas(citas: Cita[]): void {
@@ -130,9 +220,11 @@ function renderCitas(citas: Cita[]): void {
 		cell(row, paciente?.nombre ?? cita.paciente_id);
 		cell(
 			row,
-			new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(
-				new Date(cita.fecha_hora),
-			),
+			new Intl.DateTimeFormat('es-MX', {
+				dateStyle: 'medium',
+				timeStyle: 'short',
+				timeZone: CLINIC_TIME_ZONE,
+			}).format(new Date(cita.fecha_hora)),
 		);
 		const estado = cell(row, '');
 		const badge = document.createElement('span');
@@ -148,11 +240,21 @@ function renderCitas(citas: Cita[]): void {
 }
 
 async function cargarCitas(): Promise<void> {
-	if (!citaMedico.value) return renderCitas([]);
+	if (!citaMedico.value || !citaFecha.value) {
+		renderCitas([]);
+		limpiarSlots();
+		return;
+	}
 	try {
-		renderCitas(await api.citas.listarPorMedico(citaMedico.value));
+		const [citas, disponibilidad] = await Promise.all([
+			api.citas.listarPorMedico(citaMedico.value, citaFecha.value),
+			api.citas.consultarDisponibilidad(citaMedico.value, citaFecha.value),
+		]);
+		renderCitas(citas);
+		renderSlotsDisponibles(disponibilidad);
 	} catch (error) {
 		renderCitas([]);
+		limpiarSlots();
 		showError(error);
 	}
 }
@@ -206,13 +308,17 @@ medicoForm.addEventListener('submit', async (event) => {
 citaForm.addEventListener('submit', async (event) => {
 	event.preventDefault();
 	const data = new FormData(citaForm);
+	const fecha = value(data, 'fecha');
+	const medicoId = value(data, 'medico_id');
 	try {
 		await api.citas.crear({
 			paciente_id: value(data, 'paciente_id'),
-			medico_id: value(data, 'medico_id'),
-			fecha_hora: value(data, 'fecha_hora'),
+			medico_id: medicoId,
+			fecha_hora: `${fecha}T${value(data, 'hora')}:00`,
 		});
 		citaForm.reset();
+		citaFecha.value = fecha;
+		citaMedico.value = medicoId;
 		showNotice('Cita agendada.');
 		await refresh();
 	} catch (error) {
@@ -280,5 +386,6 @@ citasBody.addEventListener('click', async (event) => {
 });
 
 citaMedico.addEventListener('change', cargarCitas);
+citaFecha.addEventListener('change', cargarCitas);
 
 void refresh();
