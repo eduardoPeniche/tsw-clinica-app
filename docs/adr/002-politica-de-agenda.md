@@ -49,6 +49,8 @@ FastAPI → CrearCita → PoliticaAgenda → repositorio de citas → SQLite
   11:01 que se cruza con los slots 11:00–11:30 y 11:30–12:00. El índice único
   parcial de SQLite mantiene una protección adicional para inicios alineados
   idénticos.
+- Para la fecha actual, los slots cuyo inicio ya pasó se devuelven con estado
+  `no_disponible`. El frontend los deshabilita sin calcular la hora actual.
 - El frontend etiqueta las entradas como hora de Mérida y presenta las citas
   con esa zona, aunque el navegador use otra distinta.
 - La consulta de agenda acepta una fecha (`GET /medicos/{id}/citas?fecha=…`)

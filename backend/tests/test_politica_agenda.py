@@ -54,3 +54,15 @@ class PoliticaAgendaTests(unittest.TestCase):
         estados = {slot.inicio.strftime("%H:%M"): slot.estado for slot in disponibilidad.slots}
         self.assertEqual(estados["11:00"], EstadoSlot.OCUPADO)
         self.assertEqual(estados["11:30"], EstadoSlot.OCUPADO)
+
+    def test_slots_que_ya_iniciaron_no_estan_disponibles(self) -> None:
+        disponibilidad = self.politica.disponibilidad_en_fecha(
+            date(2026, 10, 1),
+            [],
+            ahora=datetime(2026, 10, 1, 10, 15, tzinfo=self.zona_horaria),
+        )
+
+        estados = {slot.inicio.strftime("%H:%M"): slot.estado for slot in disponibilidad.slots}
+        self.assertEqual(estados["10:00"], EstadoSlot.NO_DISPONIBLE)
+        self.assertEqual(estados["10:30"], EstadoSlot.LIBRE)
+        self.assertEqual(disponibilidad.slot_recomendado, time(10, 30))

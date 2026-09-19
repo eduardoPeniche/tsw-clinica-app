@@ -230,12 +230,12 @@ function cambiarPaginaDeFechas(direction: -1 | 1): void {
 function renderSlotsDisponibles(disponibilidad: DisponibilidadAgenda): void {
 	citaSlots.replaceChildren();
 	for (const slot of disponibilidad.slots) {
-		const ocupado = slot.estado === 'ocupado';
+		const noDisponible = slot.estado !== 'libre';
 		const button = document.createElement('button');
 		button.type = 'button';
 		button.className = 'slot';
 		button.dataset.slot = slot.inicio;
-		button.disabled = ocupado;
+		button.disabled = noDisponible;
 		button.textContent = `${slot.inicio} – ${slot.fin}`;
 		button.addEventListener('click', () => seleccionarSlot(slot.inicio));
 		citaSlots.append(button);

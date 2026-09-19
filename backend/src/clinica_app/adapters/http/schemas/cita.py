@@ -19,7 +19,7 @@ class CitaOutput(CitaInput):
 class SlotDisponibilidadOutput(BaseModel):
     inicio: str
     fin: str
-    estado: Literal["libre", "ocupado"]
+    estado: Literal["libre", "no_disponible", "ocupado"]
 
 
 class DisponibilidadAgendaOutput(BaseModel):

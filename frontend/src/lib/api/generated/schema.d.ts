@@ -287,7 +287,7 @@ export interface components {
              * Estado
              * @enum {string}
              */
-            estado: "libre" | "ocupado";
+            estado: "libre" | "no_disponible" | "ocupado";
         };
         /** ValidationError */
         ValidationError: {

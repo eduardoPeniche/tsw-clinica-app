@@ -10,6 +10,7 @@ from clinica_app.domain.entities import Cita, EstadoCita
 
 class EstadoSlot(str, Enum):
     LIBRE = "libre"
+    NO_DISPONIBLE = "no_disponible"
     OCUPADO = "ocupado"
 
 
@@ -77,16 +78,25 @@ class PoliticaAgenda:
 
         while inicio + self.duracion_cita <= cierre:
             fin = inicio + self.duracion_cita
-            estado = (
-                EstadoSlot.OCUPADO
-                if any(self._se_traslapan(inicio, fin, cita.fecha_hora) for cita in citas_activas)
-                else EstadoSlot.LIBRE
-            )
+            estado = self._estado_del_slot(inicio, fin, citas_activas, ahora)
             slots.append(SlotDisponibilidad(inicio.time(), fin.time(), estado))
             inicio = fin
 
         recomendacion = self._slot_recomendado(fecha, slots, ahora)
         return DisponibilidadAgenda(fecha, str(self.zona_horaria), slots, recomendacion)
+
+    def _estado_del_slot(
+        self,
+        inicio: datetime,
+        fin: datetime,
+        citas_activas: Iterable[Cita],
+        ahora: datetime,
+    ) -> EstadoSlot:
+        if inicio < ahora:
+            return EstadoSlot.NO_DISPONIBLE
+        if any(self._se_traslapan(inicio, fin, cita.fecha_hora) for cita in citas_activas):
+            return EstadoSlot.OCUPADO
+        return EstadoSlot.LIBRE
 
     def _slot_recomendado(
         self,
