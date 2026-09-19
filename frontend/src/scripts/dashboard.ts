@@ -15,14 +15,19 @@ const medicoForm = byId<HTMLFormElement>('medico-form');
 const citaForm = byId<HTMLFormElement>('cita-form');
 const citaPaciente = byId<HTMLSelectElement>('cita-paciente');
 const citaMedico = byId<HTMLSelectElement>('cita-medico');
-const citaFecha = byId<HTMLSelectElement>('cita-fecha');
-const citaHora = byId<HTMLSelectElement>('cita-hora');
+const citaFecha = byId<HTMLInputElement>('cita-fecha');
+const citaFechas = byId<HTMLDivElement>('cita-fechas');
+const citaFechaAnterior = byId<HTMLButtonElement>('cita-fecha-anterior');
+const citaFechaSiguiente = byId<HTMLButtonElement>('cita-fecha-siguiente');
+const citaHora = byId<HTMLInputElement>('cita-hora');
+const citaSlots = byId<HTMLDivElement>('cita-slots');
 const notice = byId<HTMLParagraphElement>('notice');
 
 let pacientes: Paciente[] = [];
 let medicos: Medico[] = [];
 const CLINIC_TIME_ZONE = 'America/Merida';
-const BUSINESS_DAY_COUNT = 60;
+const VISIBLE_BUSINESS_DAYS = 5;
+let dateOffset = 0;
 
 type DateTimeParts = {
 	day: string;
@@ -165,50 +170,91 @@ function renderSelects(): void {
 	renderFechasDeAtencion();
 }
 
-function renderFechasDeAtencion(): void {
-	const selected = citaFecha.value;
+function renderFechasDeAtencion(): Array<{ label: string; value: string }> {
 	const today = clinicDateTimeParts(new Date());
 	const cursor = new Date(Date.UTC(Number(today.year), Number(today.month) - 1, Number(today.day)));
-	const formatter = new Intl.DateTimeFormat('es-MX', {
-		day: 'numeric',
-		month: 'long',
+	const dayFormatter = new Intl.DateTimeFormat('es-MX', { day: 'numeric', timeZone: 'UTC' });
+	const monthFormatter = new Intl.DateTimeFormat('es-MX', { month: 'short', timeZone: 'UTC' });
+	const weekdayFormatter = new Intl.DateTimeFormat('es-MX', {
 		timeZone: 'UTC',
-		weekday: 'long',
+		weekday: 'short',
 	});
 	const fechas: Array<{ label: string; value: string }> = [];
+	let diasLaborablesRecorridos = 0;
 
-	while (fechas.length < BUSINESS_DAY_COUNT) {
+	while (fechas.length < VISIBLE_BUSINESS_DAYS) {
 		const dayOfWeek = cursor.getUTCDay();
 		if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-			fechas.push({
-				label: formatter.format(cursor),
-				value: cursor.toISOString().slice(0, 10),
-			});
+			if (diasLaborablesRecorridos >= dateOffset) {
+				fechas.push({
+					label: `${weekdayFormatter.format(cursor).replace('.', '')} ${dayFormatter.format(cursor)} ${monthFormatter.format(cursor).replace('.', '')}`,
+					value: cursor.toISOString().slice(0, 10),
+				});
+			}
+			diasLaborablesRecorridos += 1;
 		}
 		cursor.setUTCDate(cursor.getUTCDate() + 1);
 	}
 
-	citaFecha.replaceChildren();
-	for (const fecha of fechas) citaFecha.add(new Option(fecha.label, fecha.value));
-	citaFecha.value = fechas.some((fecha) => fecha.value === selected) ? selected : fechas[0].value;
+	if (!fechas.some((fecha) => fecha.value === citaFecha.value)) {
+		citaFecha.value = fechas[0].value;
+	}
+	citaFechas.replaceChildren();
+	for (const fecha of fechas) {
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'date-pill';
+		button.dataset.date = fecha.value;
+		button.textContent = fecha.label;
+		button.classList.toggle('date-pill-selected', fecha.value === citaFecha.value);
+		button.setAttribute('aria-pressed', String(fecha.value === citaFecha.value));
+		button.addEventListener('click', () => seleccionarFecha(fecha.value));
+		citaFechas.append(button);
+	}
+	citaFechaAnterior.disabled = dateOffset === 0;
+	return fechas;
+}
+
+function seleccionarFecha(fecha: string): void {
+	citaFecha.value = fecha;
+	renderFechasDeAtencion();
+	void cargarCitas();
+}
+
+function cambiarPaginaDeFechas(direction: -1 | 1): void {
+	dateOffset = Math.max(0, dateOffset + direction * VISIBLE_BUSINESS_DAYS);
+	const fechas = renderFechasDeAtencion();
+	seleccionarFecha(fechas[0].value);
 }
 
 function renderSlotsDisponibles(disponibilidad: DisponibilidadAgenda): void {
-	citaHora.replaceChildren();
+	citaSlots.replaceChildren();
 	for (const slot of disponibilidad.slots) {
 		const ocupado = slot.estado === 'ocupado';
-		const option = new Option(
-			`${slot.inicio} – ${slot.fin}${ocupado ? ' · ocupado' : ''}`,
-			slot.inicio,
-		);
-		option.disabled = ocupado;
-		citaHora.add(option);
+		const button = document.createElement('button');
+		button.type = 'button';
+		button.className = 'slot';
+		button.dataset.slot = slot.inicio;
+		button.disabled = ocupado;
+		button.textContent = `${slot.inicio} – ${slot.fin}`;
+		button.addEventListener('click', () => seleccionarSlot(slot.inicio));
+		citaSlots.append(button);
 	}
-	citaHora.value = disponibilidad.slot_recomendado ?? '';
+	seleccionarSlot(disponibilidad.slot_recomendado ?? '');
 }
 
 function limpiarSlots(): void {
-	citaHora.replaceChildren(new Option('Selecciona un médico y una fecha', ''));
+	citaHora.value = '';
+	citaSlots.replaceChildren();
+}
+
+function seleccionarSlot(inicio: string): void {
+	citaHora.value = inicio;
+	for (const button of citaSlots.querySelectorAll<HTMLButtonElement>('button[data-slot]')) {
+		const seleccionado = button.dataset.slot === inicio;
+		button.classList.toggle('slot-selected', seleccionado);
+		button.setAttribute('aria-pressed', String(seleccionado));
+	}
 }
 
 function renderCitas(citas: Cita[]): void {
@@ -310,11 +356,16 @@ citaForm.addEventListener('submit', async (event) => {
 	const data = new FormData(citaForm);
 	const fecha = value(data, 'fecha');
 	const medicoId = value(data, 'medico_id');
+	const hora = value(data, 'hora');
+	if (!hora) {
+		showNotice('Selecciona un horario disponible.', true);
+		return;
+	}
 	try {
 		await api.citas.crear({
 			paciente_id: value(data, 'paciente_id'),
 			medico_id: medicoId,
-			fecha_hora: `${fecha}T${value(data, 'hora')}:00`,
+			fecha_hora: `${fecha}T${hora}:00`,
 		});
 		citaForm.reset();
 		citaFecha.value = fecha;
@@ -386,6 +437,7 @@ citasBody.addEventListener('click', async (event) => {
 });
 
 citaMedico.addEventListener('change', cargarCitas);
-citaFecha.addEventListener('change', cargarCitas);
+citaFechaAnterior.addEventListener('click', () => cambiarPaginaDeFechas(-1));
+citaFechaSiguiente.addEventListener('click', () => cambiarPaginaDeFechas(1));
 
 void refresh();

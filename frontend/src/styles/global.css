@@ -56,7 +56,105 @@ p {
 	margin-bottom: 1.75rem;
 }
 .cita-form {
-	grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+	grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+}
+.slot-picker {
+	grid-column: 1 / -1;
+}
+.slot-picker p,
+.date-picker p {
+	margin-bottom: 0.6rem;
+	color: #465360;
+	font-size: 0.82rem;
+	font-weight: 700;
+}
+.date-picker {
+	grid-column: 1 / -1;
+}
+.date-navigation {
+	display: flex;
+	align-items: center;
+	gap: 0.55rem;
+}
+.date-list {
+	display: flex;
+	flex: 1;
+	gap: 0.55rem;
+	overflow: hidden;
+}
+.date-arrow,
+.date-pill {
+	border: 1px solid #8bc9c2;
+	border-radius: 999px;
+	background: #f1fbf9;
+	color: #07655e;
+	font-weight: 750;
+	cursor: pointer;
+}
+.date-arrow {
+	width: 2.25rem;
+	height: 2.25rem;
+	font-size: 1.1rem;
+}
+.date-arrow:disabled {
+	border-color: #d8dde0;
+	background: #f2f3f4;
+	color: #8a969f;
+	cursor: not-allowed;
+}
+.date-pill {
+	flex: 1 1 0;
+	min-width: 0;
+	padding: 0.55rem 0.7rem;
+	font-size: 0.78rem;
+	text-transform: capitalize;
+	white-space: nowrap;
+}
+.date-arrow:hover:not(:disabled),
+.date-pill:hover:not(.date-pill-selected) {
+	background: #d9f0ec;
+}
+.date-pill-selected {
+	border-color: #087f74;
+	background: #087f74;
+	color: #fff;
+}
+.date-pill-selected:hover {
+	border-color: #06675f;
+	background: #06675f;
+}
+.slot-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+}
+.slot {
+	border: 1px solid #8bc9c2;
+	border-radius: 999px;
+	padding: 0.5rem 0.75rem;
+	background: #f1fbf9;
+	color: #07655e;
+	font-size: 0.82rem;
+	font-weight: 750;
+	cursor: pointer;
+}
+.slot:hover:not(:disabled):not(.slot-selected) {
+	background: #d9f0ec;
+}
+.slot:disabled {
+	border-color: #d8dde0;
+	background: #f2f3f4;
+	color: #8a969f;
+	cursor: not-allowed;
+}
+.slot-selected {
+	border-color: #087f74;
+	background: #087f74;
+	color: #fff;
+}
+.slot-selected:hover {
+	border-color: #06675f;
+	background: #06675f;
 }
 .entity-form label,
 .appointments-heading label {

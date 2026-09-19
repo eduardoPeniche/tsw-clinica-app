@@ -101,14 +101,34 @@ import '../styles/global.css';
 						<label>
 							Médico<select id="cita-medico" name="medico_id" required></select>
 						</label>
-						<label>
-							Fecha (Mérida)
-							<select id="cita-fecha" name="fecha" required></select>
-						</label>
-						<label>
-							Hora (Mérida)
-							<select id="cita-hora" name="hora" required></select>
-						</label>
+						<input id="cita-fecha" name="fecha" type="hidden" />
+						<div class="date-picker" aria-labelledby="cita-fechas-label">
+							<p id="cita-fechas-label">Fecha (Mérida)</p>
+							<div class="date-navigation">
+								<button
+									id="cita-fecha-anterior"
+									class="date-arrow"
+									type="button"
+									aria-label="Ver fechas anteriores"
+								>
+									←
+								</button>
+								<div id="cita-fechas" class="date-list" role="group"></div>
+								<button
+									id="cita-fecha-siguiente"
+									class="date-arrow"
+									type="button"
+									aria-label="Ver fechas posteriores"
+								>
+									→
+								</button>
+							</div>
+						</div>
+						<input id="cita-hora" name="hora" type="hidden" />
+						<div class="slot-picker" aria-labelledby="cita-slots-label">
+							<p id="cita-slots-label">Horario (Mérida)</p>
+							<div id="cita-slots" class="slot-list" role="group"></div>
+						</div>
 						<button class="button" type="submit">
 							Agendar cita
 						</button>
