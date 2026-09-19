@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -14,12 +14,15 @@ class CitaRepository(Protocol):
 
     def listar_por_medico(self, medico_id: UUID) -> list[Cita]: ...
 
+    def listar_por_medico_en_fecha(self, medico_id: UUID, fecha: date) -> list[Cita]: ...
+
     def listar_por_paciente(self, paciente_id: UUID) -> list[Cita]: ...
 
     def actualizar(self, cita: Cita) -> Cita: ...
 
-    def medico_tiene_cita_activa(
+    def medico_tiene_cita_activa_en_intervalo(
         self,
         medico_id: UUID,
-        fecha_hora: datetime,
+        inicio: datetime,
+        fin: datetime,
     ) -> bool: ...

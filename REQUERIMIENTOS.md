@@ -103,8 +103,8 @@ registrado aquí.
 | Nombres de casos de uso | Patrón `entidad_accion`, por ejemplo `paciente_crear.py`. | Mantiene los archivos agrupados visualmente por entidad dentro de la capa técnica `use_cases`. | Aceptada |
 | Cancelación de citas | Operación idempotente. | Repetir una cancelación deja la cita en estado `cancelada` sin generar error. | Aceptada |
 | Diseño de la API | Pendiente |  | Pendiente |
-| Duración y formato de los horarios | Pendiente |  | Pendiente |
-| Citas que bloquean un horario | Pendiente |  | Pendiente |
+| Duración y formato de los horarios | Slots de 30 minutos, de lunes a viernes, entre 09:00 y 17:00 de `America/Merida`. El último inicio permitido es 16:30. | Mantiene una agenda predecible y hace explícitos los límites que se deben validar. | Aceptada |
+| Citas que bloquean un horario | Las citas `pendiente` y `confirmada` bloquean el slot; una cita `cancelada` lo libera. | Corresponde a los estados definidos para el modelo de citas. | Aceptada |
 | Estrategia contra citas simultáneas | Pendiente |  | Pendiente |
 | Frontend | Pendiente |  | Pendiente |
 | Ejecución en contenedor | Imagen Python 3.14 con dependencias sincronizadas mediante `uv` dentro de Docker. | Permite ejecutar el proyecto sin instalar dependencias Python en el equipo local. | Aceptada |
@@ -135,6 +135,7 @@ la implementación.
 | 2026-09-19 | El proyecto se ejecutará con Docker Compose. | El contenedor usa Python 3.14 y `uv sync --frozen` para instalar dentro de la imagen las versiones fijadas en `uv.lock`. |
 | 2026-09-19 | Las entidades de dominio usarán `dataclasses` e identificadores UUID. | Permite modelarlas con Python estándar sin acoplarlas al ORM o a FastAPI. |
 | 2026-09-19 | Los puertos de repositorio usarán `Protocol`. | Los adaptadores SQLite y los repositorios falsos de pruebas no tendrán que heredar de una clase abstracta. |
+| 2026-09-19 | La agenda clínica atiende de lunes a viernes de 09:00 a 17:00, en slots de 30 minutos y zona `America/Merida`. | El último inicio válido es 16:30. La política de dominio valida estas condiciones antes de comprobar la disponibilidad del médico. El detalle está en `docs/adr/002-politica-de-agenda.md`. |
 
 ## Criterios de aceptación de la primera entrega
 

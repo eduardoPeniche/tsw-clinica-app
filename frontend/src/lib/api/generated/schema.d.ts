@@ -129,6 +129,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/medicos/{medico_id}/disponibilidad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consultar Disponibilidad */
+        get: operations["consultar_disponibilidad_medicos__medico_id__disponibilidad_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/pacientes/{paciente_id}/citas": {
         parameters: {
             query?: never;
@@ -193,6 +210,20 @@ export interface components {
             /** Estado */
             estado: string;
         };
+        /** DisponibilidadAgendaOutput */
+        DisponibilidadAgendaOutput: {
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /** Zona Horaria */
+            zona_horaria: string;
+            /** Slots */
+            slots: components["schemas"]["SlotDisponibilidadOutput"][];
+            /** Slot Recomendado */
+            slot_recomendado: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -245,6 +276,18 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /** SlotDisponibilidadOutput */
+        SlotDisponibilidadOutput: {
+            /** Inicio */
+            inicio: string;
+            /** Fin */
+            fin: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado: "libre" | "ocupado";
         };
         /** ValidationError */
         ValidationError: {
@@ -630,7 +673,9 @@ export interface operations {
     };
     listar_por_medico_medicos__medico_id__citas_get: {
         parameters: {
-            query?: never;
+            query?: {
+                fecha?: string | null;
+            };
             header?: never;
             path: {
                 medico_id: string;
@@ -646,6 +691,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CitaOutput"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    consultar_disponibilidad_medicos__medico_id__disponibilidad_get: {
+        parameters: {
+            query: {
+                fecha: string;
+            };
+            header?: never;
+            path: {
+                medico_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisponibilidadAgendaOutput"];
                 };
             };
             /** @description Validation Error */

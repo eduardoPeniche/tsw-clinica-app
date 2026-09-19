@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 import sqlite3
 from uuid import UUID
 
@@ -29,6 +29,14 @@ class SQLiteCitaRepository:
     def listar_por_medico(self, medico_id: UUID) -> list[Cita]:
         return self._listar("medico_id", medico_id)
 
+    def listar_por_medico_en_fecha(self, medico_id: UUID, fecha: date) -> list[Cita]:
+        with self.database.connect() as c:
+            filas = c.execute(
+                "SELECT * FROM citas WHERE medico_id=? AND fecha_hora LIKE ? ORDER BY fecha_hora, id",
+                (str(medico_id), f"{fecha.isoformat()}%"),
+            ).fetchall()
+        return [self._entidad(fila) for fila in filas]
+
     def listar_por_paciente(self, paciente_id: UUID) -> list[Cita]:
         return self._listar("paciente_id", paciente_id)
 
@@ -37,10 +45,30 @@ class SQLiteCitaRepository:
             c.execute("UPDATE citas SET paciente_id=?, medico_id=?, fecha_hora=?, estado=? WHERE id=?", (str(cita.paciente_id), str(cita.medico_id), cita.fecha_hora.isoformat(), cita.estado.value, str(cita.id)))
         return cita
 
-    def medico_tiene_cita_activa(self, medico_id: UUID, fecha_hora: datetime) -> bool:
+    def medico_tiene_cita_activa_en_intervalo(
+        self,
+        medico_id: UUID,
+        inicio: datetime,
+        fin: datetime,
+    ) -> bool:
         with self.database.connect() as c:
-            fila = c.execute("SELECT 1 FROM citas WHERE medico_id=? AND fecha_hora=? AND estado IN ('pendiente', 'confirmada')", (str(medico_id), fecha_hora.isoformat())).fetchone()
-        return fila is not None
+            filas = c.execute(
+                "SELECT * FROM citas WHERE medico_id=? AND estado IN ('pendiente', 'confirmada')",
+                (str(medico_id),),
+            ).fetchall()
+
+        duracion = fin - inicio
+        for fila in filas:
+            cita = self._entidad(fila)
+            inicio_existente = cita.fecha_hora
+            if inicio_existente.tzinfo is None:
+                inicio_existente = inicio_existente.replace(tzinfo=inicio.tzinfo)
+            else:
+                inicio_existente = inicio_existente.astimezone(inicio.tzinfo)
+            fin_existente = inicio_existente + duracion
+            if inicio_existente < fin and inicio < fin_existente:
+                return True
+        return False
 
     def _listar(self, columna: str, identificador: UUID) -> list[Cita]:
         with self.database.connect() as c:

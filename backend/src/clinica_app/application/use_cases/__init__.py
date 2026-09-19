@@ -3,6 +3,9 @@ from clinica_app.application.use_cases.medico_crear import CrearMedico
 from clinica_app.application.use_cases.medico_eliminar import EliminarMedico
 from clinica_app.application.use_cases.medico_listar import ListarMedicos
 from clinica_app.application.use_cases.medico_obtener import ObtenerMedico
+from clinica_app.application.use_cases.medico_consultar_disponibilidad import (
+    ConsultarDisponibilidadMedico,
+)
 from clinica_app.application.use_cases.cita_cancelar import CancelarCita
 from clinica_app.application.use_cases.cita_crear import CrearCita
 from clinica_app.application.use_cases.cita_listar_por_medico import ListarCitasPorMedico
@@ -19,6 +22,7 @@ __all__ = [
     "ActualizarMedico",
     "ActualizarPaciente",
     "CancelarCita",
+    "ConsultarDisponibilidadMedico",
     "CrearCita",
     "CrearMedico",
     "CrearPaciente",

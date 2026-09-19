@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 import tempfile
 import unittest
@@ -16,7 +16,9 @@ from clinica_app.application.use_cases import (
     CrearMedico,
     CrearPaciente,
 )
-from clinica_app.domain.entities import EstadoCita
+from clinica_app.domain.entities import Cita, EstadoCita
+from clinica_app.domain.policies import PoliticaAgenda
+from zoneinfo import ZoneInfo
 
 
 class SQLiteIntegrationTests(unittest.TestCase):
@@ -27,6 +29,13 @@ class SQLiteIntegrationTests(unittest.TestCase):
         self.pacientes = SQLitePacienteRepository(database)
         self.medicos = SQLiteMedicoRepository(database)
         self.citas = SQLiteCitaRepository(database)
+        self.politica_agenda = PoliticaAgenda(
+            frozenset({0, 1, 2, 3, 4}),
+            time(9, 0),
+            time(17, 0),
+            timedelta(minutes=30),
+            ZoneInfo("America/Merida"),
+        )
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
@@ -49,7 +58,9 @@ class SQLiteIntegrationTests(unittest.TestCase):
             "Luis Pérez", date(1995, 8, 20), "luis@example.com"
         )
         medico = CrearMedico(self.medicos).ejecutar("Dr. Ruiz", "Cardiología")
-        crear_cita = CrearCita(self.citas, self.pacientes, self.medicos)
+        crear_cita = CrearCita(
+            self.citas, self.pacientes, self.medicos, self.politica_agenda
+        )
         horario = datetime(2026, 10, 1, 9, 0)
 
         cita = crear_cita.ejecutar(paciente.id, medico.id, horario)
@@ -57,7 +68,13 @@ class SQLiteIntegrationTests(unittest.TestCase):
         with self.assertRaises(HorarioNoDisponibleError):
             crear_cita.ejecutar(segundo_paciente.id, medico.id, horario)
 
-        self.assertTrue(self.citas.medico_tiene_cita_activa(medico.id, horario))
+        self.assertTrue(
+            self.citas.medico_tiene_cita_activa_en_intervalo(
+                medico.id,
+                cita.fecha_hora,
+                self.politica_agenda.fin_de_cita(cita.fecha_hora),
+            )
+        )
         self.assertEqual(cita.estado, EstadoCita.PENDIENTE)
 
     def test_cancelar_cita_libera_el_horario_y_es_idempotente(self) -> None:
@@ -66,7 +83,9 @@ class SQLiteIntegrationTests(unittest.TestCase):
         )
         medico = CrearMedico(self.medicos).ejecutar("Dr. Ruiz", "Cardiología")
         horario = datetime(2026, 10, 1, 9, 0)
-        cita = CrearCita(self.citas, self.pacientes, self.medicos).ejecutar(
+        cita = CrearCita(
+            self.citas, self.pacientes, self.medicos, self.politica_agenda
+        ).ejecutar(
             paciente.id, medico.id, horario
         )
         cancelar = CancelarCita(self.citas)
@@ -75,4 +94,30 @@ class SQLiteIntegrationTests(unittest.TestCase):
         cita_cancelada = cancelar.ejecutar(cita.id)
 
         self.assertEqual(cita_cancelada.estado, EstadoCita.CANCELADA)
-        self.assertFalse(self.citas.medico_tiene_cita_activa(medico.id, horario))
+        self.assertFalse(
+            self.citas.medico_tiene_cita_activa_en_intervalo(
+                medico.id,
+                cita.fecha_hora,
+                self.politica_agenda.fin_de_cita(cita.fecha_hora),
+            )
+        )
+
+    def test_cita_historica_fuera_de_slot_bloquea_intervalos_superpuestos(self) -> None:
+        paciente = CrearPaciente(self.pacientes).ejecutar(
+            "Ana López", date(1999, 4, 12), "ana@example.com"
+        )
+        medico = CrearMedico(self.medicos).ejecutar("Dr. Ruiz", "Cardiología")
+        cita_historica = Cita(
+            paciente.id,
+            medico.id,
+            datetime(2026, 10, 1, 11, 1, tzinfo=ZoneInfo("America/Merida")),
+        )
+        self.citas.guardar(cita_historica)
+        crear_cita = CrearCita(
+            self.citas, self.pacientes, self.medicos, self.politica_agenda
+        )
+
+        with self.assertRaises(HorarioNoDisponibleError):
+            crear_cita.ejecutar(paciente.id, medico.id, datetime(2026, 10, 1, 11, 0))
+        with self.assertRaises(HorarioNoDisponibleError):
+            crear_cita.ejecutar(paciente.id, medico.id, datetime(2026, 10, 1, 11, 30))

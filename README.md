@@ -35,6 +35,13 @@ El frontend Astro queda disponible en `http://localhost:4321`.
 
 Una segunda cita activa para el mismo médico y fecha/hora devuelve `409 Conflict`.
 
+## Horario de atención
+
+La clínica atiende de lunes a viernes, de 09:00 a 17:00 en la zona
+`America/Merida`. Cada cita ocupa un slot de 30 minutos; por eso el último
+inicio disponible es a las 16:30. Estas reglas se configuran en las variables
+del servicio `api` dentro de `docker-compose.yml` y se validan en el dominio.
+
 ## Ejecutar pruebas
 
 ```bash

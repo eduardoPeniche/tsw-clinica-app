@@ -6,6 +6,7 @@ export type Medico = components['schemas']['MedicoOutput'];
 export type MedicoInput = components['schemas']['MedicoInput'];
 export type Cita = components['schemas']['CitaOutput'];
 export type CitaInput = components['schemas']['CitaInput'];
+export type DisponibilidadAgenda = components['schemas']['DisponibilidadAgendaOutput'];
 
 export class ApiError extends Error {
 	constructor(
@@ -66,7 +67,14 @@ export const api = {
 	citas: {
 		crear: (data: CitaInput) => request<Cita>('/citas', json(data)),
 		cancelar: (id: string) => request<Cita>(`/citas/${id}/cancelacion`, { method: 'PATCH' }),
-		listarPorMedico: (medicoId: string) => request<Cita[]>(`/medicos/${medicoId}/citas`),
+		consultarDisponibilidad: (medicoId: string, fecha: string) =>
+			request<DisponibilidadAgenda>(
+				`/medicos/${medicoId}/disponibilidad?fecha=${encodeURIComponent(fecha)}`,
+			),
+		listarPorMedico: (medicoId: string, fecha?: string) => {
+			const query = fecha ? `?fecha=${encodeURIComponent(fecha)}` : '';
+			return request<Cita[]>(`/medicos/${medicoId}/citas${query}`);
+		},
 		listarPorPaciente: (pacienteId: string) => request<Cita[]>(`/pacientes/${pacienteId}/citas`),
 	},
 };
