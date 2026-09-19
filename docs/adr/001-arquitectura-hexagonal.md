@@ -218,7 +218,7 @@ crece, se podrá evaluar una organización híbrida sin cambiar esos límites.
 
 | Tema | Pregunta que debemos responder | Estado |
 | --- | --- | --- |
-| Entidades de dominio | ¿Usaremos clases puras de Python, `dataclasses` u otra representación? | Pendiente |
+| Entidades de dominio | `dataclasses` de Python con identificadores UUID generados en el dominio. | Aceptada |
 | Puertos | ¿Los contratos se definirán con `Protocol` de Python o con clases abstractas? | Pendiente |
 | Adaptadores iniciales | FastAPI está confirmado para HTTP; falta elegir la biblioteca para SQLite/ORM. | En progreso |
 | Dependencias | ¿Desde qué módulo de composición se crearán e inyectarán repositorios y casos de uso? | Pendiente |
