@@ -219,8 +219,112 @@ crece, se podrá evaluar una organización híbrida sin cambiar esos límites.
 | Tema | Pregunta que debemos responder | Estado |
 | --- | --- | --- |
 | Entidades de dominio | `dataclasses` de Python con identificadores UUID generados en el dominio. | Aceptada |
-| Puertos | ¿Los contratos se definirán con `Protocol` de Python o con clases abstractas? | Pendiente |
+| Puertos | `Protocol` de Python. | Aceptada |
 | Adaptadores iniciales | FastAPI está confirmado para HTTP; falta elegir la biblioteca para SQLite/ORM. | En progreso |
 | Dependencias | ¿Desde qué módulo de composición se crearán e inyectarán repositorios y casos de uso? | Pendiente |
 | Elementos compartidos | ¿En qué ubicación vivirán configuración, errores generales y utilidades comunes? | Pendiente |
 | Concurrencia | ¿Qué mecanismo de base de datos protegerá contra dos reservas simultáneas? | Pendiente |
+
+## Guía de implementación: del dominio a la API
+
+La secuencia de construcción conserva las dependencias hacia el centro de la
+arquitectura. No se debe hacer que el dominio o los casos de uso importen
+FastAPI, SQLite ni SQL.
+
+```text
+Entidades de dominio           ✅
+        ↓
+Puertos de repositorio         ← siguiente paso
+        ↓
+Casos de uso CRUD
+        ↓
+Adaptador SQLite real
+        ↓
+Rutas HTTP con FastAPI
+```
+
+Primero describimos lo que la aplicación necesita para administrar pacientes y
+médicos, sin decidir aún cómo se guardan los datos:
+
+```text
+application/
+  ports/
+    paciente_repository.py
+    medico_repository.py
+    cita_repository.py
+  use_cases/
+    crear_paciente.py
+    listar_pacientes.py
+    obtener_paciente.py
+    actualizar_paciente.py
+    eliminar_paciente.py
+```
+
+Por ejemplo, `PacienteRepository` declara las operaciones `guardar`,
+`obtener_por_id`, `listar`, `actualizar` y `eliminar`. El caso de uso
+`crear_paciente` depende de ese contrato, no de SQLite.
+
+`CitaRepository` declara las consultas por paciente y médico, además de
+`medico_tiene_cita_activa`. El caso de uso `crear_cita` usará esta última
+operación para validar disponibilidad antes de guardar una cita.
+
+Después se implementa el adaptador real de persistencia:
+
+```text
+adapters/
+  persistence/
+    sqlite/
+      database.py
+      paciente_repository.py
+      medico_repository.py
+```
+
+Ese adaptador cumple los puertos mediante SQLite. Así se obtiene persistencia
+real sin introducir SQL en las entidades o en los casos de uso. Finalmente,
+las rutas FastAPI son adaptadores de entrada: convierten una petición HTTP en
+una llamada a un caso de uso y convierten su resultado en una respuesta HTTP.
+
+### Por qué usamos `Protocol` para los puertos
+
+Un puerto es una interfaz que especifica los métodos que necesita la
+aplicación. En Python se puede expresar mediante una clase abstracta o mediante
+`Protocol`.
+
+Una clase abstracta exige que cada adaptador herede explícitamente del
+contrato. Python impide instanciar el adaptador si le falta un método abstracto:
+
+```python
+from abc import ABC, abstractmethod
+
+
+class PacienteRepository(ABC):
+    @abstractmethod
+    def guardar(self, paciente: Paciente) -> Paciente: ...
+
+
+class SQLitePacienteRepository(PacienteRepository):
+    def guardar(self, paciente: Paciente) -> Paciente:
+        ...
+```
+
+Con `Protocol`, importa la estructura y no la herencia. Cualquier clase que
+tenga los métodos con las firmas requeridas puede utilizarse como repositorio:
+
+```python
+from typing import Protocol
+
+
+class PacienteRepository(Protocol):
+    def guardar(self, paciente: Paciente) -> Paciente: ...
+
+
+class SQLitePacienteRepository:
+    def guardar(self, paciente: Paciente) -> Paciente:
+        ...
+```
+
+Esto reduce el acoplamiento: el adaptador SQLite no necesita heredar del puerto
+y un repositorio en memoria para pruebas solo necesita implementar los mismos
+métodos. Los analizadores de tipos pueden detectar contratos incompletos antes
+de ejecutar el programa. Por ese motivo, `Protocol` es la opción elegida para
+este proyecto.

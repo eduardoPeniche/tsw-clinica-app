@@ -96,6 +96,7 @@ registrado aquí.
 | --- | --- | --- | --- |
 | Framework del backend | FastAPI `0.141.1` con Python 3.14. | Permite crear una API en Python y ejecutar pruebas automatizadas. | Aceptada |
 | Representación de entidades | `dataclasses` de Python con identificadores UUID. | Reduce código repetitivo y mantiene las entidades independientes de frameworks y de la persistencia. | Aceptada |
+| Definición de puertos | `Protocol` de Python. | Los adaptadores cumplen el contrato por sus métodos, sin heredar de una clase base. | Aceptada |
 | Motor y modelo de persistencia | Pendiente |  | Pendiente |
 | Organización de capas y carpetas | Arquitectura hexagonal organizada por tipo técnico. | Hace explícitos los límites entre entidades, casos de uso, puertos y adaptadores; es adecuada para aprender este estilo. | Aceptada |
 | Organización de casos de uso | Un archivo por acción del sistema. | Mantiene cada operación pequeña, explícita y fácil de probar. | Aceptada |
@@ -129,6 +130,7 @@ la implementación.
 | 2026-09-19 | Se adopta FastAPI `0.141.1` con Python 3.14. | Es el framework seleccionado para el backend. |
 | 2026-09-19 | El proyecto se ejecutará con Docker Compose. | El contenedor usa Python 3.14 y `uv sync --frozen` para instalar dentro de la imagen las versiones fijadas en `uv.lock`. |
 | 2026-09-19 | Las entidades de dominio usarán `dataclasses` e identificadores UUID. | Permite modelarlas con Python estándar sin acoplarlas al ORM o a FastAPI. |
+| 2026-09-19 | Los puertos de repositorio usarán `Protocol`. | Los adaptadores SQLite y los repositorios falsos de pruebas no tendrán que heredar de una clase abstracta. |
 
 ## Criterios de aceptación de la primera entrega
 
