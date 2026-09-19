@@ -4,3 +4,8 @@ services:
       context: .
     ports:
       - "8000:8000"
+    volumes:
+      - clinica_data:/data
+
+volumes:
+  clinica_data:

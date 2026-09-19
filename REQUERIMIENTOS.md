@@ -97,7 +97,7 @@ registrado aquí.
 | Framework del backend | FastAPI `0.141.1` con Python 3.14. | Permite crear una API en Python y ejecutar pruebas automatizadas. | Aceptada |
 | Representación de entidades | `dataclasses` de Python con identificadores UUID. | Reduce código repetitivo y mantiene las entidades independientes de frameworks y de la persistencia. | Aceptada |
 | Definición de puertos | `Protocol` de Python. | Los adaptadores cumplen el contrato por sus métodos, sin heredar de una clase base. | Aceptada |
-| Motor y modelo de persistencia | Pendiente |  | Pendiente |
+| Motor y modelo de persistencia | SQLite mediante `sqlite3`. | Persistencia real sin agregar dependencias. | Aceptada |
 | Organización de capas y carpetas | Arquitectura hexagonal organizada por tipo técnico. | Hace explícitos los límites entre entidades, casos de uso, puertos y adaptadores; es adecuada para aprender este estilo. | Aceptada |
 | Organización de casos de uso | Un archivo por acción del sistema. | Mantiene cada operación pequeña, explícita y fácil de probar. | Aceptada |
 | Nombres de casos de uso | Patrón `entidad_accion`, por ejemplo `paciente_crear.py`. | Mantiene los archivos agrupados visualmente por entidad dentro de la capa técnica `use_cases`. | Aceptada |
