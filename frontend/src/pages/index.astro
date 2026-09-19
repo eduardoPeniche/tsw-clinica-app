@@ -1,17 +1,137 @@
 ---
-
+import '../styles/global.css';
 ---
 
-<html lang="en">
+<html lang="es">
 	<head>
 		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
 		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
+		<title>Clínica | Gestión de citas</title>
 	</head>
 	<body>
-		<h1>Astro</h1>
+		<main class="dashboard">
+			<p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+			<section class="panel" aria-labelledby="pacientes-title">
+				<div class="panel-heading">
+					<h2 id="pacientes-title">Pacientes</h2>
+				</div>
+				<div class="panel-content">
+					<form id="paciente-form" class="entity-form">
+						<input name="id" type="hidden" />
+						<label>
+							Nombre completo
+							<input name="nombre" required />
+						</label>
+						<label>
+							Fecha de nacimiento
+							<input name="fecha_nacimiento" type="date" required />
+						</label>
+						<label>
+							Contacto
+							<input name="contacto" required />
+						</label>
+						<button class="button" type="submit">
+							Guardar paciente
+						</button>
+					</form>
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Paciente</th>
+									<th>Nacimiento</th>
+									<th>Contacto</th>
+									<th>
+										<span class="sr-only">Acciones</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody id="pacientes-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel" aria-labelledby="medicos-title">
+				<div class="panel-heading">
+					<h2 id="medicos-title">Médicos</h2>
+				</div>
+				<div class="panel-content">
+					<form id="medico-form" class="entity-form">
+						<input name="id" type="hidden" />
+						<label>
+							Nombre completo
+							<input name="nombre" required />
+						</label>
+						<label>
+							Especialidad
+							<input name="especialidad" required />
+						</label>
+						<button class="button" type="submit">
+							Guardar médico
+						</button>
+					</form>
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Médico</th>
+									<th>Especialidad</th>
+									<th>
+										<span class="sr-only">Acciones</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody id="medicos-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel" aria-labelledby="citas-title">
+				<div class="panel-heading">
+					<h2 id="citas-title">Citas</h2>
+				</div>
+				<div class="panel-content">
+					<form id="cita-form" class="entity-form cita-form">
+						<label>
+							Paciente<select id="cita-paciente" name="paciente_id" required></select>
+						</label>
+						<label>
+							Médico<select id="cita-medico" name="medico_id" required></select>
+						</label>
+						<label>
+							Fecha y hora
+							<input name="fecha_hora" type="datetime-local" required />
+						</label>
+						<button class="button" type="submit">
+							Agendar cita
+						</button>
+					</form>
+					<div class="appointments-heading">
+						<h3>Agenda del médico seleccionado</h3>
+					</div>
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Paciente</th>
+									<th>Fecha y hora</th>
+									<th>Estado</th>
+									<th>
+										<span class="sr-only">Acciones</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody id="citas-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+		</main>
+		<script>
+			import '../scripts/dashboard';
+		</script>
 	</body>
 </html>
