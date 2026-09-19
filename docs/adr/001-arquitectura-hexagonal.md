@@ -221,7 +221,7 @@ crece, se podrá evaluar una organización híbrida sin cambiar esos límites.
 | Entidades de dominio | `dataclasses` de Python con identificadores UUID generados en el dominio. | Aceptada |
 | Puertos | `Protocol` de Python. | Aceptada |
 | Adaptadores iniciales | FastAPI está confirmado para HTTP; falta elegir la biblioteca para SQLite/ORM. | En progreso |
-| Dependencias | ¿Desde qué módulo de composición se crearán e inyectarán repositorios y casos de uso? | Pendiente |
+| Dependencias | `container.py` construye SQLite, repositorios y casos de uso. | Aceptada |
 | Elementos compartidos | ¿En qué ubicación vivirán configuración, errores generales y utilidades comunes? | Pendiente |
 | Concurrencia | ¿Qué mecanismo de base de datos protegerá contra dos reservas simultáneas? | Pendiente |
 

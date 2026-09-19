@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     volumes:
       - clinica_data:/data
+    environment:
+      DATABASE_PATH: /data/clinica.db
 
 volumes:
   clinica_data:

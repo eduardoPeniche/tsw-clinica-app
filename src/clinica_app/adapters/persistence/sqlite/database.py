@@ -23,6 +23,7 @@ class SQLiteDatabase:
             connection.close()
 
     def initialize(self) -> None:
+        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as connection:
             connection.executescript("""
                 CREATE TABLE IF NOT EXISTS pacientes (
