@@ -12,6 +12,71 @@ import '../styles/global.css';
 		<main class="dashboard">
 			<p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
 
+			<section class="panel" aria-labelledby="citas-title">
+				<div class="panel-heading">
+					<h2 id="citas-title">Citas</h2>
+				</div>
+				<div class="panel-content">
+					<form id="cita-form" class="entity-form cita-form">
+						<label>
+							Paciente<select id="cita-paciente" name="paciente_id" required></select>
+						</label>
+						<label>
+							Médico<select id="cita-medico" name="medico_id" required></select>
+						</label>
+						<input id="cita-fecha" name="fecha" type="hidden" />
+						<div class="date-picker" aria-labelledby="cita-fechas-label">
+							<p id="cita-fechas-label">Fecha (Mérida)</p>
+							<div class="date-navigation">
+								<button
+									id="cita-fecha-anterior"
+									class="date-arrow"
+									type="button"
+									aria-label="Ver fechas anteriores"
+								>
+									←
+								</button>
+								<div id="cita-fechas" class="date-list" role="group"></div>
+								<button
+									id="cita-fecha-siguiente"
+									class="date-arrow"
+									type="button"
+									aria-label="Ver fechas posteriores"
+								>
+									→
+								</button>
+							</div>
+						</div>
+						<input id="cita-hora" name="hora" type="hidden" />
+						<div class="slot-picker" aria-labelledby="cita-slots-label">
+							<p id="cita-slots-label">Horario (Mérida)</p>
+							<div id="cita-slots" class="slot-list" role="group"></div>
+						</div>
+						<button class="button" type="submit">
+							Agendar cita
+						</button>
+					</form>
+					<div class="appointments-heading">
+						<h3>Agenda del médico seleccionado</h3>
+					</div>
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th>Paciente</th>
+									<th>Fecha y hora</th>
+									<th>Estado</th>
+									<th>
+										<span class="sr-only">Acciones</span>
+									</th>
+								</tr>
+							</thead>
+							<tbody id="citas-body"></tbody>
+						</table>
+					</div>
+				</div>
+			</section>
+
 			<section class="panel" aria-labelledby="pacientes-title">
 				<div class="panel-heading">
 					<h2 id="pacientes-title">Pacientes</h2>
@@ -84,71 +149,6 @@ import '../styles/global.css';
 								</tr>
 							</thead>
 							<tbody id="medicos-body"></tbody>
-						</table>
-					</div>
-				</div>
-			</section>
-
-			<section class="panel" aria-labelledby="citas-title">
-				<div class="panel-heading">
-					<h2 id="citas-title">Citas</h2>
-				</div>
-				<div class="panel-content">
-					<form id="cita-form" class="entity-form cita-form">
-						<label>
-							Paciente<select id="cita-paciente" name="paciente_id" required></select>
-						</label>
-						<label>
-							Médico<select id="cita-medico" name="medico_id" required></select>
-						</label>
-						<input id="cita-fecha" name="fecha" type="hidden" />
-						<div class="date-picker" aria-labelledby="cita-fechas-label">
-							<p id="cita-fechas-label">Fecha (Mérida)</p>
-							<div class="date-navigation">
-								<button
-									id="cita-fecha-anterior"
-									class="date-arrow"
-									type="button"
-									aria-label="Ver fechas anteriores"
-								>
-									←
-								</button>
-								<div id="cita-fechas" class="date-list" role="group"></div>
-								<button
-									id="cita-fecha-siguiente"
-									class="date-arrow"
-									type="button"
-									aria-label="Ver fechas posteriores"
-								>
-									→
-								</button>
-							</div>
-						</div>
-						<input id="cita-hora" name="hora" type="hidden" />
-						<div class="slot-picker" aria-labelledby="cita-slots-label">
-							<p id="cita-slots-label">Horario (Mérida)</p>
-							<div id="cita-slots" class="slot-list" role="group"></div>
-						</div>
-						<button class="button" type="submit">
-							Agendar cita
-						</button>
-					</form>
-					<div class="appointments-heading">
-						<h3>Agenda del médico seleccionado</h3>
-					</div>
-					<div class="table-wrap">
-						<table>
-							<thead>
-								<tr>
-									<th>Paciente</th>
-									<th>Fecha y hora</th>
-									<th>Estado</th>
-									<th>
-										<span class="sr-only">Acciones</span>
-									</th>
-								</tr>
-							</thead>
-							<tbody id="citas-body"></tbody>
 						</table>
 					</div>
 				</div>
