@@ -58,6 +58,11 @@ FastAPI → CrearCita → PoliticaAgenda → repositorio de citas → SQLite
   consulta por separado (`GET /medicos/{id}/disponibilidad?fecha=…`): el
   backend devuelve los slots libres u ocupados y el recomendado, sin duplicar
   reglas de agenda en el frontend.
+- La disponibilidad por rango se consulta con
+  `GET /medicos/{id}/disponibilidad/rango?desde=…&hasta=…`. Devuelve los slots
+  de cada día solicitado y acepta como máximo 31 días; la vista semanal usa un
+  rango de cinco días para representar simultáneamente los horarios libres,
+  ocupados y no disponibles.
 - El selector de fecha del frontend ofrece únicamente los próximos 60 días
   laborables de Mérida; el backend conserva la validación para cualquier otro
   cliente de la API.

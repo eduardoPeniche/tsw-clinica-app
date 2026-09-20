@@ -91,6 +91,32 @@ class HttpApiTests(unittest.TestCase):
         self.assertEqual(len(response.json()), 1)
         self.assertTrue(response.json()[0]["fecha_hora"].startswith("2026-10-01"))
 
+    def test_lista_citas_de_un_medico_en_un_rango(self) -> None:
+        paciente = self.client.post(
+            "/pacientes",
+            json={"nombre": "Ana", "fecha_nacimiento": "1999-04-12", "contacto": "a@x.com"},
+        ).json()
+        medico = self.client.post(
+            "/medicos",
+            json={"nombre": "Dr. Ruiz", "especialidad": "Cardiología"},
+        ).json()
+        for fecha_hora in ("2026-10-01T09:00:00", "2026-10-02T09:00:00"):
+            self.client.post(
+                "/citas",
+                json={
+                    "paciente_id": paciente["id"],
+                    "medico_id": medico["id"],
+                    "fecha_hora": fecha_hora,
+                },
+            )
+
+        response = self.client.get(
+            f"/medicos/{medico['id']}/citas/rango?desde=2026-10-01&hasta=2026-10-02"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 2)
+
     def test_disponibilidad_del_medico_devuelve_slots_con_estado(self) -> None:
         paciente = self.client.post(
             "/pacientes",
@@ -116,3 +142,45 @@ class HttpApiTests(unittest.TestCase):
         self.assertEqual(payload["zona_horaria"], "America/Merida")
         self.assertEqual(payload["slots"][0], {"inicio": "09:00", "fin": "09:30", "estado": "ocupado"})
         self.assertEqual(payload["slots"][1]["estado"], "libre")
+
+    def test_disponibilidad_por_rango_devuelve_slots_de_cada_dia(self) -> None:
+        paciente = self.client.post(
+            "/pacientes",
+            json={"nombre": "Ana", "fecha_nacimiento": "1999-04-12", "contacto": "a@x.com"},
+        ).json()
+        medico = self.client.post(
+            "/medicos",
+            json={"nombre": "Dr. Ruiz", "especialidad": "Cardiología"},
+        ).json()
+        self.client.post(
+            "/citas",
+            json={
+                "paciente_id": paciente["id"],
+                "medico_id": medico["id"],
+                "fecha_hora": "2026-10-01T09:00:00",
+            },
+        )
+
+        response = self.client.get(
+            f"/medicos/{medico['id']}/disponibilidad/rango?desde=2026-10-01&hasta=2026-10-02"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["duracion_minutos"], 30)
+        self.assertEqual([dia["fecha"] for dia in payload["dias"]], ["2026-10-01", "2026-10-02"])
+        self.assertEqual(payload["dias"][0]["slots"][0]["estado"], "ocupado")
+        self.assertEqual(payload["dias"][1]["slots"][0]["estado"], "libre")
+
+    def test_disponibilidad_por_rango_rechaza_mas_de_31_dias(self) -> None:
+        medico = self.client.post(
+            "/medicos",
+            json={"nombre": "Dr. Ruiz", "especialidad": "Cardiología"},
+        ).json()
+
+        response = self.client.get(
+            f"/medicos/{medico['id']}/disponibilidad/rango?desde=2026-10-01&hasta=2026-11-01"
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("31 días", response.json()["detail"])

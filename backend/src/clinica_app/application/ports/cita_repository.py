@@ -16,6 +16,13 @@ class CitaRepository(Protocol):
 
     def listar_por_medico_en_fecha(self, medico_id: UUID, fecha: date) -> list[Cita]: ...
 
+    def listar_por_medico_entre_fechas(
+        self,
+        medico_id: UUID,
+        desde: date,
+        hasta: date,
+    ) -> list[Cita]: ...
+
     def listar_por_paciente(self, paciente_id: UUID) -> list[Cita]: ...
 
     def actualizar(self, cita: Cita) -> Cita: ...

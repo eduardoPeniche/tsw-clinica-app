@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import sqlite3
 from uuid import UUID
 
@@ -34,6 +34,24 @@ class SQLiteCitaRepository:
             filas = c.execute(
                 "SELECT * FROM citas WHERE medico_id=? AND fecha_hora LIKE ? ORDER BY fecha_hora, id",
                 (str(medico_id), f"{fecha.isoformat()}%"),
+            ).fetchall()
+        return [self._entidad(fila) for fila in filas]
+
+    def listar_por_medico_entre_fechas(
+        self,
+        medico_id: UUID,
+        desde: date,
+        hasta: date,
+    ) -> list[Cita]:
+        limite_superior = hasta + timedelta(days=1)
+        with self.database.connect() as c:
+            filas = c.execute(
+                """
+                SELECT * FROM citas
+                WHERE medico_id=? AND fecha_hora >= ? AND fecha_hora < ?
+                ORDER BY fecha_hora, id
+                """,
+                (str(medico_id), desde.isoformat(), limite_superior.isoformat()),
             ).fetchall()
         return [self._entidad(fila) for fila in filas]
 

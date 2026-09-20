@@ -32,6 +32,7 @@ El frontend Astro queda disponible en `http://localhost:4321`.
 | Pacientes | `POST /pacientes`, `GET /pacientes`, `GET/PUT/DELETE /pacientes/{id}` |
 | Médicos | `POST /medicos`, `GET /medicos`, `GET/PUT/DELETE /medicos/{id}` |
 | Citas | `POST /citas`, `PATCH /citas/{id}/cancelacion`, `GET /medicos/{id}/citas`, `GET /pacientes/{id}/citas` |
+| Disponibilidad | `GET /medicos/{id}/disponibilidad?fecha=…`, `GET /medicos/{id}/disponibilidad/rango?desde=…&hasta=…` |
 
 Una segunda cita activa para el mismo médico y fecha/hora devuelve `409 Conflict`.
 
@@ -41,6 +42,9 @@ La clínica atiende de lunes a viernes, de 09:00 a 17:00 en la zona
 `America/Merida`. Cada cita ocupa un slot de 30 minutos; por eso el último
 inicio disponible es a las 16:30. Estas reglas se configuran en las variables
 del servicio `api` dentro de `docker-compose.yml` y se validan en el dominio.
+
+La consulta por rango devuelve los slots de cada fecha solicitada y admite hasta
+31 días. Es el contrato destinado a las vistas de calendario Día y Semana.
 
 ## Ejecutar pruebas
 

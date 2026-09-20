@@ -27,3 +27,10 @@ class DisponibilidadAgendaOutput(BaseModel):
     zona_horaria: str
     slots: list[SlotDisponibilidadOutput]
     slot_recomendado: str | None
+
+
+class DisponibilidadRangoAgendaOutput(BaseModel):
+    medico_id: UUID
+    zona_horaria: str
+    duracion_minutos: int
+    dias: list[DisponibilidadAgendaOutput]
