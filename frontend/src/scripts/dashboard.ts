@@ -7,36 +7,38 @@ import {
 	type Paciente,
 } from '../lib/api/client';
 
+const CLINIC_TIME_ZONE = 'America/Merida';
 const pacientesBody = byId<HTMLTableSectionElement>('pacientes-body');
 const medicosBody = byId<HTMLTableSectionElement>('medicos-body');
 const citasBody = byId<HTMLTableSectionElement>('citas-body');
 const pacienteForm = byId<HTMLFormElement>('paciente-form');
 const medicoForm = byId<HTMLFormElement>('medico-form');
 const citaForm = byId<HTMLFormElement>('cita-form');
+const pacienteDialog = byId<HTMLDialogElement>('paciente-dialog');
+const medicoDialog = byId<HTMLDialogElement>('medico-dialog');
+const citaDialog = byId<HTMLDialogElement>('cita-dialog');
 const citaPaciente = byId<HTMLSelectElement>('cita-paciente');
-const citaMedico = byId<HTMLSelectElement>('cita-medico');
+const citaMedico = byId<HTMLInputElement>('cita-medico');
 const citaFecha = byId<HTMLInputElement>('cita-fecha');
-const citaFechas = byId<HTMLDivElement>('cita-fechas');
-const citaFechaAnterior = byId<HTMLButtonElement>('cita-fecha-anterior');
-const citaFechaSiguiente = byId<HTMLButtonElement>('cita-fecha-siguiente');
 const citaHora = byId<HTMLInputElement>('cita-hora');
-const citaSlots = byId<HTMLDivElement>('cita-slots');
-const notice = byId<HTMLParagraphElement>('notice');
+const citaResumen = byId<HTMLParagraphElement>('cita-resumen');
+const calendarioMedico = byId<HTMLSelectElement>('calendario-medico');
+const calendarRegion = byId<HTMLDivElement>('calendar-region');
+const calendarPeriod = byId<HTMLElement>('calendar-period');
+const regresarSemana = byId<HTMLButtonElement>('regresar-semana');
+const agendaList = byId<HTMLElement>('agenda-list');
+const notice = byId<HTMLDivElement>('notice');
+const noticeMessage = byId<HTMLSpanElement>('notice-message');
+const noticeClose = byId<HTMLButtonElement>('notice-close');
 
 let pacientes: Paciente[] = [];
 let medicos: Medico[] = [];
-const CLINIC_TIME_ZONE = 'America/Merida';
-const VISIBLE_BUSINESS_DAYS = 5;
-let dateOffset = 0;
-
-type DateTimeParts = {
-	day: string;
-	hour: string;
-	minute: string;
-	month: string;
-	second: string;
-	year: string;
-};
+let citasDelDia: Cita[] = [];
+let agendaPorFecha = new Map<string, DisponibilidadAgenda>();
+let citasPorSlot = new Map<string, Cita>();
+let fechaSeleccionada = siguienteDiaLaborable(clinicDate(new Date()));
+let vistaCalendario: 'dia' | 'semana' | 'mes' = 'semana';
+let noticeTimeout: number | undefined;
 
 function byId<T extends HTMLElement>(id: string): T {
 	const element = document.getElementById(id);
@@ -48,33 +50,85 @@ function value(data: FormData, key: string): string {
 	return String(data.get(key) ?? '').trim();
 }
 
-function clinicDateTimeParts(value: Date | string): DateTimeParts {
-	const parts = new Intl.DateTimeFormat('en-US', {
-		day: '2-digit',
-		hour: '2-digit',
-		hourCycle: 'h23',
-		hour12: false,
-		minute: '2-digit',
-		month: '2-digit',
-		second: '2-digit',
+function clinicDate(value: Date): string {
+	const parts = new Intl.DateTimeFormat('en-CA', {
 		timeZone: CLINIC_TIME_ZONE,
 		year: 'numeric',
-	}).formatToParts(new Date(value));
-
-	return Object.fromEntries(
+		month: '2-digit',
+		day: '2-digit',
+	}).formatToParts(value);
+	const result = Object.fromEntries(
 		parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]),
-	) as DateTimeParts;
+	);
+	return `${result.year}-${result.month}-${result.day}`;
 }
 
-function clinicDate(value: Date | string): string {
-	const parts = clinicDateTimeParts(value);
-	return `${parts.year}-${parts.month}-${parts.day}`;
+function clinicTime(value: Date | string): string {
+	const parts = new Intl.DateTimeFormat('en-GB', {
+		timeZone: CLINIC_TIME_ZONE,
+		hour: '2-digit',
+		minute: '2-digit',
+		hourCycle: 'h23',
+	}).formatToParts(new Date(value));
+	const result = Object.fromEntries(
+		parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]),
+	);
+	return `${result.hour}:${result.minute}`;
+}
+
+function dateFromIso(iso: string): Date {
+	return new Date(`${iso}T12:00:00Z`);
+}
+
+function isoDate(date: Date): string {
+	return date.toISOString().slice(0, 10);
+}
+
+function addDays(iso: string, days: number): string {
+	const date = dateFromIso(iso);
+	date.setUTCDate(date.getUTCDate() + days);
+	return isoDate(date);
+}
+
+function siguienteDiaLaborable(iso: string): string {
+	const date = dateFromIso(iso);
+	if (date.getUTCDay() === 6) return addDays(iso, 2);
+	if (date.getUTCDay() === 0) return addDays(iso, 1);
+	return iso;
+}
+
+function startOfWeek(iso: string): string {
+	const date = dateFromIso(iso);
+	date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7));
+	return isoDate(date);
+}
+
+function visibleDates(): string[] {
+	if (vistaCalendario === 'dia') return [fechaSeleccionada];
+	if (vistaCalendario === 'semana') {
+		const inicio = startOfWeek(fechaSeleccionada);
+		return Array.from({ length: 5 }, (_, index) => addDays(inicio, index));
+	}
+	const date = dateFromIso(fechaSeleccionada);
+	const inicio = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+	const total = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+	return Array.from({ length: total }, (_, index) =>
+		isoDate(new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth(), index + 1))),
+	);
 }
 
 function showNotice(message: string, isError = false): void {
-	notice.textContent = message;
+	if (noticeTimeout) window.clearTimeout(noticeTimeout);
+	noticeMessage.textContent = message;
 	notice.hidden = false;
 	notice.classList.toggle('error', isError);
+	notice.setAttribute('role', isError ? 'alert' : 'status');
+	noticeTimeout = window.setTimeout(
+		() => {
+			notice.hidden = true;
+		},
+		isError ? 8000 : 3500,
+	);
 }
 
 function showError(error: unknown): void {
@@ -90,26 +144,31 @@ function clearRows(body: HTMLTableSectionElement): void {
 
 function emptyRow(body: HTMLTableSectionElement, message: string, columns: number): void {
 	const row = body.insertRow();
-	const cell = row.insertCell();
-	cell.colSpan = columns;
-	cell.className = 'empty';
-	cell.textContent = message;
+	const target = row.insertCell();
+	target.colSpan = columns;
+	target.className = 'empty';
+	target.textContent = message;
 }
 
 function cell(row: HTMLTableRowElement, text: string): HTMLTableCellElement {
-	const result = row.insertCell();
-	result.textContent = text;
-	return result;
+	const target = row.insertCell();
+	target.textContent = text;
+	return target;
 }
 
-function button(label: string, action: string, id: string, danger = false): HTMLButtonElement {
-	const result = document.createElement('button');
-	result.type = 'button';
-	result.className = `button button-small${danger ? ' button-danger' : ' button-secondary'}`;
-	result.dataset.action = action;
-	result.dataset.id = id;
-	result.textContent = label;
-	return result;
+function actionButton(
+	label: string,
+	action: string,
+	id: string,
+	danger = false,
+): HTMLButtonElement {
+	const target = document.createElement('button');
+	target.type = 'button';
+	target.className = `button button-small${danger ? ' button-danger' : ' button-secondary'}`;
+	target.dataset.action = action;
+	target.dataset.id = id;
+	target.textContent = label;
+	return target;
 }
 
 function renderPacientes(): void {
@@ -123,8 +182,8 @@ function renderPacientes(): void {
 		const actions = cell(row, '');
 		actions.className = 'row-actions';
 		actions.append(
-			button('Editar', 'editar', paciente.id),
-			button('Eliminar', 'eliminar', paciente.id, true),
+			actionButton('Editar', 'editar', paciente.id),
+			actionButton('Eliminar', 'eliminar', paciente.id, true),
 		);
 	}
 }
@@ -139,13 +198,41 @@ function renderMedicos(): void {
 		const actions = cell(row, '');
 		actions.className = 'row-actions';
 		actions.append(
-			button('Editar', 'editar', medico.id),
-			button('Eliminar', 'eliminar', medico.id, true),
+			actionButton('Editar', 'editar', medico.id),
+			actionButton('Eliminar', 'eliminar', medico.id, true),
 		);
 	}
 }
 
-function options(
+function renderCitasDelDia(): void {
+	clearRows(citasBody);
+	if (!citasDelDia.length) return emptyRow(citasBody, 'No hay citas para este día.', 4);
+	for (const cita of citasDelDia) {
+		const row = citasBody.insertRow();
+		cell(
+			row,
+			pacientes.find((paciente) => paciente.id === cita.paciente_id)?.nombre ?? cita.paciente_id,
+		);
+		cell(
+			row,
+			new Intl.DateTimeFormat('es-MX', { timeStyle: 'short', timeZone: CLINIC_TIME_ZONE }).format(
+				new Date(cita.fecha_hora),
+			),
+		);
+		const estado = cell(row, '');
+		const badge = document.createElement('span');
+		badge.className = `estado${cita.estado === 'cancelada' ? ' estado-cancelada' : ''}`;
+		badge.textContent = cita.estado;
+		estado.append(badge);
+		const actions = cell(row, '');
+		if (cita.estado !== 'cancelada') {
+			actions.className = 'row-actions';
+			actions.append(actionButton('Cancelar', 'cancelar', cita.id, true));
+		}
+	}
+}
+
+function setOptions(
 	select: HTMLSelectElement,
 	items: Array<{ id: string; label: string }>,
 	placeholder: string,
@@ -157,152 +244,239 @@ function options(
 }
 
 function renderSelects(): void {
-	options(
+	setOptions(
 		citaPaciente,
-		pacientes.map((item) => ({ id: item.id, label: item.nombre })),
+		pacientes.map((paciente) => ({ id: paciente.id, label: paciente.nombre })),
 		'Selecciona un paciente',
 	);
-	const doctorOptions = medicos.map((item) => ({
-		id: item.id,
-		label: `${item.nombre} · ${item.especialidad}`,
-	}));
-	options(citaMedico, doctorOptions, 'Selecciona un médico');
-	renderFechasDeAtencion();
+	setOptions(
+		calendarioMedico,
+		medicos.map((medico) => ({
+			id: medico.id,
+			label: `${medico.nombre} · ${medico.especialidad}`,
+		})),
+		'Selecciona un médico',
+	);
 }
 
-function renderFechasDeAtencion(): Array<{ label: string; value: string }> {
-	const today = clinicDateTimeParts(new Date());
-	const cursor = new Date(Date.UTC(Number(today.year), Number(today.month) - 1, Number(today.day)));
-	const dayFormatter = new Intl.DateTimeFormat('es-MX', { day: 'numeric', timeZone: 'UTC' });
-	const monthFormatter = new Intl.DateTimeFormat('es-MX', { month: 'short', timeZone: 'UTC' });
-	const weekdayFormatter = new Intl.DateTimeFormat('es-MX', {
-		timeZone: 'UTC',
-		weekday: 'short',
-	});
-	const fechas: Array<{ label: string; value: string }> = [];
-	let diasLaborablesRecorridos = 0;
-
-	while (fechas.length < VISIBLE_BUSINESS_DAYS) {
-		const dayOfWeek = cursor.getUTCDay();
-		if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-			if (diasLaborablesRecorridos >= dateOffset) {
-				fechas.push({
-					label: `${weekdayFormatter.format(cursor).replace('.', '')} ${dayFormatter.format(cursor)} ${monthFormatter.format(cursor).replace('.', '')}`,
-					value: cursor.toISOString().slice(0, 10),
-				});
-			}
-			diasLaborablesRecorridos += 1;
-		}
-		cursor.setUTCDate(cursor.getUTCDate() + 1);
-	}
-
-	if (!fechas.some((fecha) => fecha.value === citaFecha.value)) {
-		citaFecha.value = fechas[0].value;
-	}
-	citaFechas.replaceChildren();
-	for (const fecha of fechas) {
-		const button = document.createElement('button');
-		button.type = 'button';
-		button.className = 'date-pill';
-		button.dataset.date = fecha.value;
-		button.textContent = fecha.label;
-		button.classList.toggle('date-pill-selected', fecha.value === citaFecha.value);
-		button.setAttribute('aria-pressed', String(fecha.value === citaFecha.value));
-		button.addEventListener('click', () => seleccionarFecha(fecha.value));
-		citaFechas.append(button);
-	}
-	citaFechaAnterior.disabled = dateOffset === 0;
-	return fechas;
+function formatDay(iso: string, options: Intl.DateTimeFormatOptions): string {
+	return new Intl.DateTimeFormat('es-MX', { timeZone: 'UTC', ...options }).format(dateFromIso(iso));
 }
 
-function seleccionarFecha(fecha: string): void {
-	citaFecha.value = fecha;
-	renderFechasDeAtencion();
-	void cargarCitas();
+function updateCalendarTitle(dates: string[]): void {
+	if (vistaCalendario === 'dia')
+		calendarPeriod.textContent = formatDay(dates[0], {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+		});
+	else if (vistaCalendario === 'semana')
+		calendarPeriod.textContent = `${formatDay(dates[0], { day: 'numeric', month: 'short' })} - ${formatDay(dates.at(-1)!, { day: 'numeric', month: 'short', year: 'numeric' })}`;
+	else
+		calendarPeriod.textContent = formatDay(fechaSeleccionada, { month: 'long', year: 'numeric' });
+	const semanaActual = startOfWeek(siguienteDiaLaborable(clinicDate(new Date())));
+	regresarSemana.hidden =
+		vistaCalendario !== 'semana' || startOfWeek(fechaSeleccionada) === semanaActual;
 }
 
-function cambiarPaginaDeFechas(direction: -1 | 1): void {
-	dateOffset = Math.max(0, dateOffset + direction * VISIBLE_BUSINESS_DAYS);
-	const fechas = renderFechasDeAtencion();
-	seleccionarFecha(fechas[0].value);
+function slotKey(date: string, inicio: string): string {
+	return `${date}T${inicio}`;
 }
 
-function renderSlotsDisponibles(disponibilidad: DisponibilidadAgenda): void {
-	citaSlots.replaceChildren();
-	for (const slot of disponibilidad.slots) {
-		const noDisponible = slot.estado !== 'libre';
-		const button = document.createElement('button');
-		button.type = 'button';
-		button.className = 'slot';
-		button.dataset.slot = slot.inicio;
-		button.disabled = noDisponible;
-		button.textContent = `${slot.inicio} – ${slot.fin}`;
-		button.addEventListener('click', () => seleccionarSlot(slot.inicio));
-		citaSlots.append(button);
-	}
-	seleccionarSlot(disponibilidad.slot_recomendado ?? '');
-}
-
-function limpiarSlots(): void {
-	citaHora.value = '';
-	citaSlots.replaceChildren();
-}
-
-function seleccionarSlot(inicio: string): void {
-	citaHora.value = inicio;
-	for (const button of citaSlots.querySelectorAll<HTMLButtonElement>('button[data-slot]')) {
-		const seleccionado = button.dataset.slot === inicio;
-		button.classList.toggle('slot-selected', seleccionado);
-		button.setAttribute('aria-pressed', String(seleccionado));
-	}
-}
-
-function renderCitas(citas: Cita[]): void {
-	clearRows(citasBody);
-	if (!citas.length) return emptyRow(citasBody, 'No hay citas para este médico.', 4);
-	for (const cita of citas) {
-		const row = citasBody.insertRow();
+function createSlot(date: string, slot: DisponibilidadAgenda['slots'][number]): HTMLButtonElement {
+	const target = document.createElement('button');
+	target.type = 'button';
+	target.className = `calendar-slot ${slot.estado}`;
+	target.dataset.time = `${slot.inicio} - ${slot.fin}`;
+	target.dataset.start = slot.inicio;
+	target.setAttribute('aria-label', `${slot.estado}, ${date}, de ${slot.inicio} a ${slot.fin}`);
+	const cita = citasPorSlot.get(slotKey(date, slot.inicio));
+	if (cita && slot.estado === 'ocupado') {
 		const paciente = pacientes.find((item) => item.id === cita.paciente_id);
-		cell(row, paciente?.nombre ?? cita.paciente_id);
-		cell(
-			row,
-			new Intl.DateTimeFormat('es-MX', {
-				dateStyle: 'medium',
-				timeStyle: 'short',
-				timeZone: CLINIC_TIME_ZONE,
-			}).format(new Date(cita.fecha_hora)),
-		);
-		const estado = cell(row, '');
-		const badge = document.createElement('span');
-		badge.className = `estado${cita.estado === 'cancelada' ? ' estado-cancelada' : ''}`;
-		badge.textContent = cita.estado;
-		estado.append(badge);
-		const actions = cell(row, '');
-		if (cita.estado !== 'cancelada') {
-			actions.className = 'row-actions';
-			actions.append(button('Cancelar', 'cancelar', cita.id, true));
-		}
+		target.textContent = paciente?.nombre ?? 'Paciente';
+		target.title = paciente?.nombre ?? 'Paciente';
 	}
+	if (slot.estado === 'libre') {
+		target.dataset.action = 'select-slot';
+		target.dataset.date = date;
+	} else {
+		target.disabled = true;
+	}
+	return target;
 }
 
-async function cargarCitas(): Promise<void> {
-	if (!citaMedico.value || !citaFecha.value) {
-		renderCitas([]);
-		limpiarSlots();
+function renderWeek(dates: string[]): void {
+	const grid = document.createElement('div');
+	grid.className = 'week-grid';
+	const corner = document.createElement('div');
+	corner.className = 'week-corner';
+	grid.append(corner);
+	for (const date of dates) {
+		const header = document.createElement('div');
+		header.className = `calendar-day-header${date === fechaSeleccionada ? ' is-selected' : ''}`;
+		header.textContent = formatDay(date, { day: 'numeric' });
+		const day = document.createElement('time');
+		const weekday = formatDay(date, { weekday: 'long' });
+		day.textContent = `${weekday[0].toUpperCase()}${weekday.slice(1)}`;
+		header.append(day);
+		grid.append(header);
+	}
+	const slots = dates.flatMap((date) => agendaPorFecha.get(date)?.slots ?? []);
+	const times = [...new Set(slots.map((slot) => slot.inicio))];
+	for (const time of times) {
+		const label = document.createElement('div');
+		label.className = 'time-label';
+		label.textContent = time;
+		grid.append(label);
+		for (const date of dates) {
+			const slot = agendaPorFecha.get(date)?.slots.find((item) => item.inicio === time);
+			grid.append(
+				slot
+					? createSlot(date, slot)
+					: Object.assign(document.createElement('div'), {
+							className: 'calendar-slot no_disponible',
+						}),
+			);
+		}
+	}
+	calendarRegion.replaceChildren(grid);
+}
+
+function renderDay(date: string): void {
+	const grid = document.createElement('div');
+	grid.className = 'day-grid';
+	grid.append(document.createElement('div'));
+	const header = document.createElement('div');
+	header.className = 'calendar-day-header is-selected';
+	header.textContent = formatDay(date, { weekday: 'long' });
+	const day = document.createElement('time');
+	day.textContent = formatDay(date, { day: 'numeric', month: 'long' });
+	header.append(day);
+	grid.append(header);
+	for (const slot of agendaPorFecha.get(date)?.slots ?? []) {
+		const label = document.createElement('div');
+		label.className = 'time-label';
+		label.textContent = slot.inicio;
+		grid.append(label, createSlot(date, slot));
+	}
+	calendarRegion.replaceChildren(grid);
+}
+
+function renderMonth(dates: string[]): void {
+	const grid = document.createElement('div');
+	grid.className = 'month-grid';
+	for (const day of ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']) {
+		const header = document.createElement('div');
+		header.className = 'month-weekday';
+		header.textContent = day;
+		grid.append(header);
+	}
+	const first = dateFromIso(dates[0]);
+	for (let padding = 0; padding < (first.getUTCDay() + 6) % 7; padding += 1)
+		grid.append(document.createElement('div'));
+	for (const date of dates) {
+		const agenda = agendaPorFecha.get(date);
+		const target = document.createElement('button');
+		target.type = 'button';
+		target.dataset.action = 'open-day';
+		target.dataset.date = date;
+		target.className = `month-day${date === fechaSeleccionada ? ' is-selected' : ''}${dateFromIso(date).getUTCDay() % 6 === 0 ? ' is-weekend' : ''}`;
+		target.textContent = String(dateFromIso(date).getUTCDate());
+		if (agenda?.slots.length) {
+			const libre = agenda.slots.filter((slot) => slot.estado === 'libre').length;
+			const ocupado = agenda.slots.filter((slot) => slot.estado === 'ocupado').length;
+			const count = document.createElement('span');
+			count.className = 'month-count';
+			count.innerHTML = `<strong>${libre}</strong> libres · ${ocupado} ocupadas`;
+			target.append(count);
+		}
+		grid.append(target);
+	}
+	calendarRegion.replaceChildren(grid);
+}
+
+function renderCalendar(): void {
+	const dates = visibleDates();
+	updateCalendarTitle(dates);
+	agendaList.hidden = vistaCalendario === 'semana';
+	if (!calendarioMedico.value) {
+		calendarRegion.textContent = 'Registra y selecciona un médico para consultar su agenda.';
 		return;
 	}
+	if (vistaCalendario === 'dia') renderDay(dates[0]);
+	else if (vistaCalendario === 'semana') renderWeek(dates);
+	else renderMonth(dates);
+}
+
+async function cargarAgenda(): Promise<void> {
+	const dates = visibleDates();
+	if (!calendarioMedico.value) {
+		agendaPorFecha = new Map();
+		citasPorSlot = new Map();
+		citasDelDia = [];
+		renderCalendar();
+		renderCitasDelDia();
+		return;
+	}
+	calendarRegion.textContent = 'Cargando disponibilidad…';
 	try {
-		const [citas, disponibilidad] = await Promise.all([
-			api.citas.listarPorMedico(citaMedico.value, citaFecha.value),
-			api.citas.consultarDisponibilidad(citaMedico.value, citaFecha.value),
+		const [rango, citas] = await Promise.all([
+			api.citas.consultarDisponibilidadEnRango(calendarioMedico.value, dates[0], dates.at(-1)!),
+			api.citas.listarPorMedicoEnRango(calendarioMedico.value, dates[0], dates.at(-1)!),
 		]);
-		renderCitas(citas);
-		renderSlotsDisponibles(disponibilidad);
+		agendaPorFecha = new Map(rango.dias.map((dia) => [dia.fecha, dia]));
+		citasPorSlot = new Map(
+			citas
+				.filter((cita) => cita.estado !== 'cancelada')
+				.map((cita) => [
+					slotKey(clinicDate(new Date(cita.fecha_hora)), clinicTime(cita.fecha_hora)),
+					cita,
+				]),
+		);
+		citasDelDia = citas.filter(
+			(cita) => clinicDate(new Date(cita.fecha_hora)) === fechaSeleccionada,
+		);
+		renderCalendar();
+		renderCitasDelDia();
 	} catch (error) {
-		renderCitas([]);
-		limpiarSlots();
+		agendaPorFecha = new Map();
+		citasPorSlot = new Map();
+		citasDelDia = [];
+		renderCalendar();
+		renderCitasDelDia();
 		showError(error);
 	}
+}
+
+function openAppointment(date: string, time: string): void {
+	if (!calendarioMedico.value) return showNotice('Selecciona un médico antes de agendar.', true);
+	citaFecha.value = date;
+	citaHora.value = time;
+	citaMedico.value = calendarioMedico.value;
+	const medico = medicos.find((item) => item.id === calendarioMedico.value);
+	citaResumen.textContent = `${formatDay(date, { weekday: 'long', day: 'numeric', month: 'long' })} · ${time} · ${medico?.nombre ?? 'Médico'}`;
+	citaDialog.showModal();
+}
+
+function movePeriod(direction: -1 | 1): void {
+	if (vistaCalendario === 'dia') fechaSeleccionada = addDays(fechaSeleccionada, direction);
+	else if (vistaCalendario === 'semana')
+		fechaSeleccionada = addDays(fechaSeleccionada, direction * 7);
+	else {
+		const date = dateFromIso(fechaSeleccionada);
+		fechaSeleccionada = isoDate(
+			new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + direction, 1)),
+		);
+	}
+	void cargarAgenda();
+}
+
+function showView(view: string): void {
+	for (const section of document.querySelectorAll<HTMLElement>('.app-view'))
+		section.hidden = section.id !== `${view}-view`;
+	for (const button of document.querySelectorAll<HTMLButtonElement>('[data-view-target]'))
+		button.classList.toggle('is-active', button.dataset.viewTarget === view);
 }
 
 async function refresh(): Promise<void> {
@@ -311,7 +485,7 @@ async function refresh(): Promise<void> {
 		renderPacientes();
 		renderMedicos();
 		renderSelects();
-		await cargarCitas();
+		await cargarAgenda();
 	} catch (error) {
 		showError(error);
 	}
@@ -329,13 +503,13 @@ pacienteForm.addEventListener('submit', async (event) => {
 		const id = value(data, 'id');
 		await (id ? api.pacientes.actualizar(id, input) : api.pacientes.crear(input));
 		pacienteForm.reset();
+		pacienteDialog.close();
 		showNotice(id ? 'Paciente actualizado.' : 'Paciente creado.');
 		await refresh();
 	} catch (error) {
 		showError(error);
 	}
 });
-
 medicoForm.addEventListener('submit', async (event) => {
 	event.preventDefault();
 	const data = new FormData(medicoForm);
@@ -344,34 +518,25 @@ medicoForm.addEventListener('submit', async (event) => {
 		const id = value(data, 'id');
 		await (id ? api.medicos.actualizar(id, input) : api.medicos.crear(input));
 		medicoForm.reset();
+		medicoDialog.close();
 		showNotice(id ? 'Médico actualizado.' : 'Médico creado.');
 		await refresh();
 	} catch (error) {
 		showError(error);
 	}
 });
-
 citaForm.addEventListener('submit', async (event) => {
 	event.preventDefault();
 	const data = new FormData(citaForm);
-	const fecha = value(data, 'fecha');
-	const medicoId = value(data, 'medico_id');
-	const hora = value(data, 'hora');
-	if (!hora) {
-		showNotice('Selecciona un horario disponible.', true);
-		return;
-	}
 	try {
 		await api.citas.crear({
 			paciente_id: value(data, 'paciente_id'),
-			medico_id: medicoId,
-			fecha_hora: `${fecha}T${hora}:00`,
+			medico_id: value(data, 'medico_id'),
+			fecha_hora: `${value(data, 'fecha')}T${value(data, 'hora')}:00`,
 		});
-		citaForm.reset();
-		citaFecha.value = fecha;
-		citaMedico.value = medicoId;
+		citaDialog.close();
 		showNotice('Cita agendada.');
-		await refresh();
+		await cargarAgenda();
 	} catch (error) {
 		showError(error);
 	}
@@ -379,49 +544,47 @@ citaForm.addEventListener('submit', async (event) => {
 
 pacientesBody.addEventListener('click', async (event) => {
 	const target = (event.target as Element).closest<HTMLButtonElement>('button[data-action]');
-	if (!target) return;
-	const paciente = pacientes.find((item) => item.id === target.dataset.id);
-	if (!paciente) return;
+	const paciente = pacientes.find((item) => item.id === target?.dataset.id);
+	if (!target || !paciente) return;
 	if (target.dataset.action === 'editar') {
 		pacienteForm.elements.namedItem('id')!.value = paciente.id;
 		pacienteForm.elements.namedItem('nombre')!.value = paciente.nombre;
 		pacienteForm.elements.namedItem('fecha_nacimiento')!.value = paciente.fecha_nacimiento;
 		pacienteForm.elements.namedItem('contacto')!.value = paciente.contacto;
 		showNotice('Editando paciente.');
+		pacienteDialog.showModal();
 		return;
 	}
-	if (!confirm(`¿Eliminar a ${paciente.nombre}?`)) return;
-	try {
-		await api.pacientes.eliminar(paciente.id);
-		showNotice('Paciente eliminado.');
-		await refresh();
-	} catch (error) {
-		showError(error);
-	}
+	if (confirm(`¿Eliminar a ${paciente.nombre}?`))
+		try {
+			await api.pacientes.eliminar(paciente.id);
+			showNotice('Paciente eliminado.');
+			await refresh();
+		} catch (error) {
+			showError(error);
+		}
 });
-
 medicosBody.addEventListener('click', async (event) => {
 	const target = (event.target as Element).closest<HTMLButtonElement>('button[data-action]');
-	if (!target) return;
-	const medico = medicos.find((item) => item.id === target.dataset.id);
-	if (!medico) return;
+	const medico = medicos.find((item) => item.id === target?.dataset.id);
+	if (!target || !medico) return;
 	if (target.dataset.action === 'editar') {
 		medicoForm.elements.namedItem('id')!.value = medico.id;
 		medicoForm.elements.namedItem('nombre')!.value = medico.nombre;
 		medicoForm.elements.namedItem('especialidad')!.value = medico.especialidad;
 		showNotice('Editando médico.');
+		medicoDialog.showModal();
 		return;
 	}
-	if (!confirm(`¿Eliminar a ${medico.nombre}?`)) return;
-	try {
-		await api.medicos.eliminar(medico.id);
-		showNotice('Médico eliminado.');
-		await refresh();
-	} catch (error) {
-		showError(error);
-	}
+	if (confirm(`¿Eliminar a ${medico.nombre}?`))
+		try {
+			await api.medicos.eliminar(medico.id);
+			showNotice('Médico eliminado.');
+			await refresh();
+		} catch (error) {
+			showError(error);
+		}
 });
-
 citasBody.addEventListener('click', async (event) => {
 	const target = (event.target as Element).closest<HTMLButtonElement>(
 		'button[data-action="cancelar"]',
@@ -430,14 +593,69 @@ citasBody.addEventListener('click', async (event) => {
 	try {
 		await api.citas.cancelar(target.dataset.id!);
 		showNotice('Cita cancelada.');
-		await cargarCitas();
+		await cargarAgenda();
 	} catch (error) {
 		showError(error);
 	}
 });
-
-citaMedico.addEventListener('change', cargarCitas);
-citaFechaAnterior.addEventListener('click', () => cambiarPaginaDeFechas(-1));
-citaFechaSiguiente.addEventListener('click', () => cambiarPaginaDeFechas(1));
+calendarRegion.addEventListener('click', (event) => {
+	const target = (event.target as Element).closest<HTMLElement>('[data-action]');
+	if (!target) return;
+	if (target.dataset.action === 'select-slot')
+		openAppointment(target.dataset.date!, target.dataset.start!);
+	if (target.dataset.action === 'open-day') {
+		fechaSeleccionada = target.dataset.date!;
+		vistaCalendario = 'dia';
+		document
+			.querySelectorAll<HTMLButtonElement>('[data-calendar-view]')
+			.forEach((button) =>
+				button.classList.toggle('is-active', button.dataset.calendarView === 'dia'),
+			);
+		void cargarAgenda();
+	}
+});
+calendarioMedico.addEventListener('change', () => void cargarAgenda());
+document
+	.querySelectorAll<HTMLButtonElement>('[data-view-target]')
+	.forEach((button) =>
+		button.addEventListener('click', () => showView(button.dataset.viewTarget!)),
+	);
+document.querySelectorAll<HTMLButtonElement>('[data-calendar-view]').forEach((button) =>
+	button.addEventListener('click', () => {
+		vistaCalendario = button.dataset.calendarView as typeof vistaCalendario;
+		document
+			.querySelectorAll<HTMLButtonElement>('[data-calendar-view]')
+			.forEach((item) => item.classList.toggle('is-active', item === button));
+		void cargarAgenda();
+	}),
+);
+byId<HTMLButtonElement>('fecha-anterior').addEventListener('click', () => movePeriod(-1));
+byId<HTMLButtonElement>('fecha-siguiente').addEventListener('click', () => movePeriod(1));
+regresarSemana.addEventListener('click', () => {
+	fechaSeleccionada = siguienteDiaLaborable(clinicDate(new Date()));
+	void cargarAgenda();
+});
+noticeClose.addEventListener('click', () => {
+	if (noticeTimeout) window.clearTimeout(noticeTimeout);
+	notice.hidden = true;
+});
+byId<HTMLButtonElement>('nuevo-paciente').addEventListener('click', () => {
+	pacienteForm.reset();
+	pacienteDialog.showModal();
+});
+byId<HTMLButtonElement>('nuevo-medico').addEventListener('click', () => {
+	medicoForm.reset();
+	medicoDialog.showModal();
+});
+byId<HTMLButtonElement>('cerrar-paciente').addEventListener('click', () => pacienteDialog.close());
+byId<HTMLButtonElement>('cancelar-paciente-dialog').addEventListener('click', () =>
+	pacienteDialog.close(),
+);
+byId<HTMLButtonElement>('cerrar-medico').addEventListener('click', () => medicoDialog.close());
+byId<HTMLButtonElement>('cancelar-medico-dialog').addEventListener('click', () =>
+	medicoDialog.close(),
+);
+byId<HTMLButtonElement>('cerrar-cita').addEventListener('click', () => citaDialog.close());
+byId<HTMLButtonElement>('cancelar-cita-dialog').addEventListener('click', () => citaDialog.close());
 
 void refresh();

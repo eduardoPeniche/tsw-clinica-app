@@ -6,101 +6,102 @@ import '../styles/global.css';
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
-		<title>Clínica | Gestión de citas</title>
+		<title>Clínica | Agenda</title>
 	</head>
 	<body>
-		<main class="dashboard">
-			<p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+		<main class="app-shell">
+			<aside class="sidebar" aria-label="Navegación principal">
+				<nav class="main-nav">
+					<button class="nav-item is-active" type="button" data-view-target="calendario">
+						<span aria-hidden="true">▦</span> Calendario
+					</button>
+					<button class="nav-item" type="button" data-view-target="pacientes">
+						<span aria-hidden="true">♙</span> Pacientes
+					</button>
+					<button class="nav-item" type="button" data-view-target="medicos">
+						<span aria-hidden="true">✚</span> Médicos
+					</button>
+				</nav>
+			</aside>
 
-			<section class="panel" aria-labelledby="citas-title">
-				<div class="panel-heading">
-					<h2 id="citas-title">Citas</h2>
+			<div class="app-content">
+				<div id="notice" class="notice" role="status" aria-live="polite" hidden>
+					<span id="notice-message"></span>
+					<button id="notice-close" class="notice-close" type="button" aria-label="Cerrar mensaje">
+						×
+					</button>
 				</div>
-				<div class="panel-content">
-					<form id="cita-form" class="entity-form cita-form">
-						<label>
-							Paciente<select id="cita-paciente" name="paciente_id" required></select>
-						</label>
-						<label>
-							Médico<select id="cita-medico" name="medico_id" required></select>
-						</label>
-						<input id="cita-fecha" name="fecha" type="hidden" />
-						<div class="date-picker" aria-labelledby="cita-fechas-label">
-							<p id="cita-fechas-label">Fecha (Mérida)</p>
-							<div class="date-navigation">
-								<button
-									id="cita-fecha-anterior"
-									class="date-arrow"
-									type="button"
-									aria-label="Ver fechas anteriores"
-								>
-									←
-								</button>
-								<div id="cita-fechas" class="date-list" role="group"></div>
-								<button
-									id="cita-fecha-siguiente"
-									class="date-arrow"
-									type="button"
-									aria-label="Ver fechas posteriores"
-								>
-									→
-								</button>
-							</div>
+				<section id="calendario-view" class="app-view" aria-label="Calendario">
+					<div class="calendar-controls" aria-label="Controles del calendario">
+						<div class="doctor-select">
+							<select
+								id="calendario-medico"
+								class="doctor-filter"
+								aria-label="Médico a visualizar"
+							></select>
+							<span aria-hidden="true">▾</span>
 						</div>
-						<input id="cita-hora" name="hora" type="hidden" />
-						<div class="slot-picker" aria-labelledby="cita-slots-label">
-							<p id="cita-slots-label">Horario (Mérida)</p>
-							<div id="cita-slots" class="slot-list" role="group"></div>
+						<div class="date-controls">
+							<button
+								id="fecha-anterior"
+								class="icon-button calendar-arrow"
+								type="button"
+								aria-label="Periodo anterior"
+							>
+								←
+							</button>
+							<span class="calendar-period">
+								<strong id="calendar-period"></strong>
+							</span>
+							<button
+								id="fecha-siguiente"
+								class="icon-button calendar-arrow"
+								type="button"
+								aria-label="Periodo siguiente"
+							>
+								→
+							</button>
 						</div>
-						<button class="button" type="submit">
-							Agendar cita
+						<button id="regresar-semana" class="calendar-return" type="button" hidden>
+							Regresar a semana actual
 						</button>
-					</form>
-					<div class="appointments-heading">
-						<h3>Agenda del médico seleccionado</h3>
+						<div class="view-switcher" role="group" aria-label="Vista del calendario">
+							<button type="button" data-calendar-view="dia">
+								Día
+							</button>
+							<button class="is-active" type="button" data-calendar-view="semana">
+								Semana
+							</button>
+							<button type="button" data-calendar-view="mes">
+								Mes
+							</button>
+						</div>
 					</div>
-					<div class="table-wrap">
-						<table>
-							<thead>
-								<tr>
-									<th>Paciente</th>
-									<th>Fecha y hora</th>
-									<th>Estado</th>
-									<th>
-										<span class="sr-only">Acciones</span>
-									</th>
-								</tr>
-							</thead>
-							<tbody id="citas-body"></tbody>
-						</table>
-					</div>
-				</div>
-			</section>
+					<div id="calendar-region" class="calendar-region" aria-live="polite"></div>
+					<section id="agenda-list" class="agenda-list" aria-labelledby="agenda-dia-title">
+						<div class="section-heading">
+							<h2 id="agenda-dia-title">Citas del día seleccionado</h2>
+						</div>
+						<div class="table-wrap">
+							<table>
+								<thead>
+									<tr>
+										<th>Paciente</th>
+										<th>Hora</th>
+										<th>Estado</th>
+										<th>
+											<span class="sr-only">Acciones</span>
+										</th>
+									</tr>
+								</thead>
+								<tbody id="citas-body"></tbody>
+							</table>
+						</div>
+					</section>
+				</section>
 
-			<section class="panel" aria-labelledby="pacientes-title">
-				<div class="panel-heading">
-					<h2 id="pacientes-title">Pacientes</h2>
-				</div>
-				<div class="panel-content">
-					<form id="paciente-form" class="entity-form">
-						<input name="id" type="hidden" />
-						<label>
-							Nombre completo
-							<input name="nombre" required />
-						</label>
-						<label>
-							Fecha de nacimiento
-							<input name="fecha_nacimiento" type="date" required />
-						</label>
-						<label>
-							Contacto
-							<input name="contacto" required />
-						</label>
-						<button class="button" type="submit">
-							Guardar paciente
-						</button>
-					</form>
-					<div class="table-wrap">
+				<section id="pacientes-view" class="app-view resource-view" aria-label="Pacientes" hidden>
+					<div class="table-wrap resource-table-wrap">
 						<table>
 							<thead>
 								<tr>
@@ -108,52 +109,124 @@ import '../styles/global.css';
 									<th>Nacimiento</th>
 									<th>Contacto</th>
 									<th>
-										<span class="sr-only">Acciones</span>
+										<button id="nuevo-paciente" class="button button-small" type="button">
+											Agregar
+										</button>
 									</th>
 								</tr>
 							</thead>
 							<tbody id="pacientes-body"></tbody>
 						</table>
 					</div>
-				</div>
-			</section>
+				</section>
 
-			<section class="panel" aria-labelledby="medicos-title">
-				<div class="panel-heading">
-					<h2 id="medicos-title">Médicos</h2>
-				</div>
-				<div class="panel-content">
-					<form id="medico-form" class="entity-form">
-						<input name="id" type="hidden" />
-						<label>
-							Nombre completo
-							<input name="nombre" required />
-						</label>
-						<label>
-							Especialidad
-							<input name="especialidad" required />
-						</label>
-						<button class="button" type="submit">
-							Guardar médico
-						</button>
-					</form>
-					<div class="table-wrap">
+				<section id="medicos-view" class="app-view resource-view" aria-label="Médicos" hidden>
+					<div class="table-wrap resource-table-wrap">
 						<table>
 							<thead>
 								<tr>
 									<th>Médico</th>
 									<th>Especialidad</th>
 									<th>
-										<span class="sr-only">Acciones</span>
+										<button id="nuevo-medico" class="button button-small" type="button">
+											Agregar
+										</button>
 									</th>
 								</tr>
 							</thead>
 							<tbody id="medicos-body"></tbody>
 						</table>
 					</div>
-				</div>
-			</section>
+				</section>
+			</div>
 		</main>
+
+		<dialog id="cita-dialog" class="appointment-dialog" aria-labelledby="cita-dialog-title">
+			<form id="cita-form" method="dialog" class="appointment-form">
+				<div class="dialog-heading">
+					<div>
+						<p class="eyebrow">Nueva cita</p>
+						<h2 id="cita-dialog-title">Agendar consulta</h2>
+					</div>
+					<button id="cerrar-cita" class="icon-button" type="button" aria-label="Cerrar">
+						×
+					</button>
+				</div>
+				<p id="cita-resumen" class="appointment-summary"></p>
+				<label>
+					Paciente<select id="cita-paciente" name="paciente_id" required></select>
+				</label>
+				<input id="cita-medico" name="medico_id" type="hidden" />
+				<input id="cita-fecha" name="fecha" type="hidden" />
+				<input id="cita-hora" name="hora" type="hidden" />
+				<div class="dialog-actions">
+					<button id="cancelar-cita-dialog" class="button button-secondary" type="button">
+						Cancelar
+					</button>
+					<button class="button" type="submit">
+						Agendar cita
+					</button>
+				</div>
+			</form>
+		</dialog>
+		<dialog id="paciente-dialog" class="appointment-dialog" aria-labelledby="paciente-dialog-title">
+			<form id="paciente-form" method="dialog" class="entity-dialog-form">
+				<div class="dialog-heading">
+					<h2 id="paciente-dialog-title">Paciente</h2>
+					<button id="cerrar-paciente" class="icon-button" type="button" aria-label="Cerrar">
+						×
+					</button>
+				</div>
+				<input name="id" type="hidden" />
+				<label>
+					Nombre completo
+					<input name="nombre" required />
+				</label>
+				<label>
+					Fecha de nacimiento
+					<input name="fecha_nacimiento" type="date" required />
+				</label>
+				<label>
+					Contacto
+					<input name="contacto" required />
+				</label>
+				<div class="dialog-actions">
+					<button id="cancelar-paciente-dialog" class="button button-secondary" type="button">
+						Cancelar
+					</button>
+					<button class="button" type="submit">
+						Guardar
+					</button>
+				</div>
+			</form>
+		</dialog>
+		<dialog id="medico-dialog" class="appointment-dialog" aria-labelledby="medico-dialog-title">
+			<form id="medico-form" method="dialog" class="entity-dialog-form">
+				<div class="dialog-heading">
+					<h2 id="medico-dialog-title">Médico</h2>
+					<button id="cerrar-medico" class="icon-button" type="button" aria-label="Cerrar">
+						×
+					</button>
+				</div>
+				<input name="id" type="hidden" />
+				<label>
+					Nombre completo
+					<input name="nombre" required />
+				</label>
+				<label>
+					Especialidad
+					<input name="especialidad" required />
+				</label>
+				<div class="dialog-actions">
+					<button id="cancelar-medico-dialog" class="button button-secondary" type="button">
+						Cancelar
+					</button>
+					<button class="button" type="submit">
+						Guardar
+					</button>
+				</div>
+			</form>
+		</dialog>
 		<script>
 			import '../scripts/dashboard';
 		</script>

@@ -7,6 +7,7 @@ export type MedicoInput = components['schemas']['MedicoInput'];
 export type Cita = components['schemas']['CitaOutput'];
 export type CitaInput = components['schemas']['CitaInput'];
 export type DisponibilidadAgenda = components['schemas']['DisponibilidadAgendaOutput'];
+export type DisponibilidadRangoAgenda = components['schemas']['DisponibilidadRangoAgendaOutput'];
 
 export class ApiError extends Error {
 	constructor(
@@ -71,10 +72,18 @@ export const api = {
 			request<DisponibilidadAgenda>(
 				`/medicos/${medicoId}/disponibilidad?fecha=${encodeURIComponent(fecha)}`,
 			),
+		consultarDisponibilidadEnRango: (medicoId: string, desde: string, hasta: string) =>
+			request<DisponibilidadRangoAgenda>(
+				`/medicos/${medicoId}/disponibilidad/rango?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`,
+			),
 		listarPorMedico: (medicoId: string, fecha?: string) => {
 			const query = fecha ? `?fecha=${encodeURIComponent(fecha)}` : '';
 			return request<Cita[]>(`/medicos/${medicoId}/citas${query}`);
 		},
+		listarPorMedicoEnRango: (medicoId: string, desde: string, hasta: string) =>
+			request<Cita[]>(
+				`/medicos/${medicoId}/citas/rango?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`,
+			),
 		listarPorPaciente: (pacienteId: string) => request<Cita[]>(`/pacientes/${pacienteId}/citas`),
 	},
 };
