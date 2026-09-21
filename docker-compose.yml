@@ -1,10 +1,10 @@
 services:
-  api:
+  backend:
     build:
       context: ./backend
       target: development
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./backend:/app
       - clinica_data:/data
@@ -20,15 +20,15 @@ services:
     build:
       context: ./frontend
     ports:
-      - "4321:4321"
+      - "${FRONTEND_PORT:-4321}:4321"
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
-      - api
+      - backend
     environment:
-      BACKEND_URL: http://api:8000
-      OPENAPI_URL: http://api:8000/openapi.json
+      BACKEND_URL: http://backend:8000
+      OPENAPI_URL: http://backend:8000/openapi.json
 
 volumes:
   clinica_data:
