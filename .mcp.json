@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "clinica-app": {
+      "command": "sh",
+      "args": ["./scripts/run-mcp"]
+    }
+  }
+}

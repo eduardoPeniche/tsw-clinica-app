@@ -107,6 +107,7 @@ registrado aquí.
 | Citas que bloquean un horario | Las citas `pendiente` y `confirmada` bloquean el slot; una cita `cancelada` lo libera. | Corresponde a los estados definidos para el modelo de citas. | Aceptada |
 | Estrategia contra citas simultáneas | Validación de intervalo en el caso de uso y un índice único parcial de SQLite como respaldo para inicios idénticos activos. | Protege el caso básico de esta entrega. Una garantía completa ante concurrencia y traslapes arbitrarios se reconsiderará al migrar a un motor con restricciones de intervalos, como PostgreSQL. | Aceptada para la primera entrega |
 | Frontend | Astro con HTML, CSS y TypeScript nativos, dentro de `frontend/`. | Es liviano para esta entrega, permite una interfaz funcional sin introducir un framework de componentes adicional y se integra con los tipos generados desde OpenAPI. | Aceptada |
+| Adaptador para agentes | MCP por `stdio`, con herramientas locales de consulta y gestión de citas. | Permite que un host MCP use los mismos casos de uso que FastAPI sin publicar otro puerto ni duplicar la lógica de negocio. | Aceptada |
 | Ejecución en contenedor | Imagen Python 3.14 con dependencias sincronizadas mediante `uv` dentro de Docker. | Permite ejecutar el proyecto sin instalar dependencias Python en el equipo local. | Aceptada |
 
 ## Plan de avance
@@ -139,6 +140,7 @@ la implementación.
 | 2026-09-19 | La API expone recursos REST para pacientes, médicos y citas, además de disponibilidad por médico y fecha. | La agenda cruda se conserva para mostrar y cancelar citas; el recurso de disponibilidad devuelve slots libres, ocupados o no disponibles, y evita duplicar reglas de negocio en el frontend. |
 | 2026-09-19 | El frontend se implementa con Astro, HTML, CSS y TypeScript nativos. | Vive en `frontend/`, se inicia junto al backend mediante Docker Compose en desarrollo y consume la API mediante un proxy `/api`. |
 | 2026-09-19 | La concurrencia se cubre hasta el alcance de SQLite para la primera entrega. | El caso de uso verifica traslapes activos y SQLite mantiene un índice parcial para impedir dos citas activas con el mismo médico e inicio. Una garantía transaccional completa queda fuera del alcance actual. |
+| 2026-09-21 | Se agrega un adaptador MCP local por `stdio`. | El host MCP inicia un proceso temporal que comparte el volumen SQLite y ejecuta los mismos casos de uso que FastAPI. El detalle está en `docs/adr/003-adaptador-mcp-stdio.md`. |
 
 ## Criterios de aceptación de la primera entrega
 
