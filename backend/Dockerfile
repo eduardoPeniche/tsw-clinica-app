@@ -19,14 +19,18 @@ FROM base AS development
 
 COPY tests ./tests
 
-# Este objetivo lo utiliza Docker Compose durante el desarrollo.
-RUN uv sync --frozen
+RUN uv sync --frozen --group mcp
 
 CMD ["fastapi", "dev", "src/clinica_app/main.py", "--host", "0.0.0.0", "--port", "8000"]
 
+FROM base AS mcp
+
+RUN uv sync --frozen --no-default-groups --group mcp
+
+CMD ["python", "-m", "clinica_app.adapters.mcp.server"]
+
 FROM base AS production
 
-# El objetivo predeterminado para `docker build` omite las dependencias de desarrollo.
 RUN uv sync --frozen --no-dev
 
 CMD ["fastapi", "run", "src/clinica_app/main.py", "--host", "0.0.0.0", "--port", "8000"]

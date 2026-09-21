@@ -1,4 +1,13 @@
+x-clinica-environment: &clinica-environment
+  DATABASE_PATH: /data/clinica.db
+  CLINIC_TIME_ZONE: America/Merida
+  APPOINTMENT_WEEKDAYS: "0,1,2,3,4"
+  APPOINTMENT_OPENING_TIME: "09:00"
+  APPOINTMENT_CLOSING_TIME: "17:00"
+  APPOINTMENT_DURATION_MINUTES: "30"
+
 services:
+
   backend:
     build:
       context: ./backend
@@ -8,13 +17,19 @@ services:
     volumes:
       - ./backend:/app
       - clinica_data:/data
-    environment:
-      DATABASE_PATH: /data/clinica.db
-      CLINIC_TIME_ZONE: America/Merida
-      APPOINTMENT_WEEKDAYS: "0,1,2,3,4"
-      APPOINTMENT_OPENING_TIME: "09:00"
-      APPOINTMENT_CLOSING_TIME: "17:00"
-      APPOINTMENT_DURATION_MINUTES: "30"
+    environment: *clinica-environment
+
+  mcp:
+    profiles: ["mcp"]
+    build:
+      context: ./backend
+      target: mcp
+    stdin_open: true
+    tty: false
+    volumes:
+      - ./backend:/app
+      - clinica_data:/data
+    environment: *clinica-environment
 
   frontend:
     build:
