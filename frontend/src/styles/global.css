@@ -51,6 +51,425 @@ p {
 	color: #b8c7d7;
 	font-weight: 650;
 	text-align: left;
+	text-decoration: none;
+}
+
+.architecture-shell {
+	min-height: 100vh;
+	display: grid;
+	grid-template-columns: 238px minmax(0, 1fr);
+	background: #fff;
+}
+.architecture-sidebar {
+	position: sticky;
+	top: 0;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	padding: 1.5rem 1rem;
+	background: #122235;
+}
+.architecture-brand {
+	color: #fff;
+	text-decoration: none;
+}
+.architecture-brand {
+	margin: 0 0 2.4rem 0.5rem;
+	font-size: 1.05rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+}
+.architecture-nav {
+	display: grid;
+	gap: 0.25rem;
+}
+.architecture-nav a {
+	border-radius: 7px;
+	padding: 0.7rem 0.75rem;
+	color: #b8c7d7;
+	font-size: 0.82rem;
+	font-weight: 650;
+	text-decoration: none;
+}
+.architecture-nav a:hover {
+	background: #20364e;
+	color: #fff;
+}
+.architecture-content {
+	width: min(1120px, 100%);
+	margin: 0 auto;
+	padding: clamp(2rem, 5vw, 5rem);
+	color: #20344a;
+}
+.architecture-hero {
+	max-width: 780px;
+	padding-bottom: 3.5rem;
+}
+.architecture-hero h1 {
+	margin: 0 0 1rem;
+	font-size: clamp(2.3rem, 5vw, 4rem);
+	letter-spacing: -0.055em;
+}
+.architecture-hero > p:last-child {
+	margin-bottom: 0;
+	color: #52677a;
+	font-size: 1.08rem;
+	line-height: 1.75;
+}
+.architecture-section {
+	padding: 3.5rem 0;
+	border-top: 1px solid #dce5eb;
+}
+.architecture-section-heading {
+	max-width: 700px;
+	margin-bottom: 1.75rem;
+}
+.architecture-section-heading h2 {
+	margin-bottom: 0;
+	font-size: clamp(1.5rem, 3vw, 2.1rem);
+	letter-spacing: -0.035em;
+}
+.hexagon-diagram {
+	display: grid;
+	grid-template-columns: minmax(140px, 1fr) auto minmax(220px, 1.45fr) auto minmax(140px, 1fr);
+	align-items: center;
+	gap: 0.8rem;
+	margin: 2rem 0 0.85rem;
+}
+.diagram-adapter,
+.diagram-core {
+	border-radius: 14px;
+	padding: 1.05rem;
+	text-align: center;
+}
+.diagram-adapter {
+	border: 1px solid #c8dce6;
+	background: #fff;
+}
+.diagram-adapter span,
+.diagram-core span {
+	display: block;
+	margin-bottom: 0.45rem;
+	color: #6e8092;
+	font-size: 0.67rem;
+	font-weight: 800;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+}
+.diagram-adapter strong,
+.diagram-core strong {
+	display: block;
+	font-size: 0.95rem;
+}
+.diagram-adapter code {
+	display: block;
+	margin-top: 0.5rem;
+	color: #60758a;
+	font-size: 0.65rem;
+}
+.diagram-core {
+	display: grid;
+	gap: 0.65rem;
+	border: 1px solid #8bcabc;
+	background: #e6f5f0;
+}
+.diagram-application,
+.diagram-domain {
+	border-radius: 9px;
+	padding: 0.8rem;
+}
+.diagram-application {
+	background: #fff;
+}
+.diagram-domain {
+	background: #167f6d;
+	color: #fff;
+}
+.diagram-domain span {
+	color: #d9f0eb;
+}
+.diagram-arrow {
+	color: #16816e;
+	font-size: 1.5rem;
+	font-weight: 800;
+}
+.architecture-note,
+.comparison-intro,
+.architecture-links {
+	color: #60758a;
+	font-size: 0.88rem;
+	line-height: 1.6;
+}
+.layer-grid,
+.comparison-grid,
+.decision-grid {
+	display: grid;
+	gap: 1rem;
+}
+.layer-grid {
+	grid-template-columns: repeat(3, 1fr);
+	margin-top: 1.5rem;
+}
+.layer-card,
+.structure-card {
+	border: 1px solid #dce5eb;
+	border-radius: 12px;
+	padding: 1.25rem;
+	background: #fff;
+}
+.layer-card > p:first-child,
+.structure-label {
+	margin-bottom: 0.55rem;
+	color: #16816e;
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.07em;
+	text-transform: uppercase;
+}
+.layer-card h3,
+.structure-card h3 {
+	margin: 0 0 0.7rem;
+	font-size: 1.02rem;
+}
+.layer-card p:not(:first-child),
+.structure-card > p:not(.structure-label) {
+	color: #60758a;
+	font-size: 0.86rem;
+	line-height: 1.55;
+}
+.layer-card code {
+	color: #16816e;
+	font-size: 0.69rem;
+}
+.port-adapter-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+	margin-top: 1.5rem;
+}
+.naming-analogy {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+	margin-top: 1.5rem;
+}
+.naming-analogy > div {
+	border-radius: 10px;
+	padding: 1.1rem 1.2rem;
+	background: #f1f7f8;
+}
+.naming-analogy p:last-child {
+	margin: 0;
+	color: #52677a;
+	font-size: 0.86rem;
+	line-height: 1.6;
+}
+.naming-summary {
+	margin: 1rem 0 0;
+	color: #087563;
+	font-size: 0.88rem;
+	font-weight: 700;
+	line-height: 1.55;
+}
+.port-adapter-card {
+	border: 1px solid #dce5eb;
+	border-radius: 12px;
+	padding: 1.25rem;
+	background: #fff;
+}
+.port-card {
+	border-top: 3px solid #2788a0;
+}
+.adapter-card {
+	border-top: 3px solid #16816e;
+}
+.port-adapter-card h3 {
+	margin: 0 0 0.7rem;
+	font-size: 1.02rem;
+}
+.port-adapter-card > p:not(.structure-label):not(.port-adapter-example) {
+	color: #60758a;
+	font-size: 0.86rem;
+	line-height: 1.55;
+}
+.port-adapter-card pre {
+	margin: 1rem 0;
+	border-radius: 8px;
+	padding: 1rem;
+	overflow-x: auto;
+	background: #122235;
+	color: #d9e4f0;
+	font-size: 0.73rem;
+	line-height: 1.55;
+}
+.port-adapter-example {
+	margin: 0;
+	border-top: 1px solid #e5edf1;
+	padding-top: 0.9rem;
+	color: #52677a;
+	font-size: 0.82rem;
+	line-height: 1.5;
+}
+.port-adapter-connection {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.55rem;
+	margin: 1rem 0 0;
+	border-radius: 9px;
+	padding: 0.9rem;
+	background: #e8f4f1;
+	color: #16816e;
+	font-size: 0.8rem;
+}
+.port-adapter-connection span::before {
+	content: '→';
+	margin-right: 0.55rem;
+}
+.flow-list {
+	display: grid;
+	max-width: 820px;
+	gap: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.flow-list li {
+	display: grid;
+	grid-template-columns: 2.25rem 1fr;
+	gap: 1rem;
+	padding: 1rem 0;
+	border-bottom: 1px solid #dce5eb;
+}
+.flow-step-heading {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1rem;
+}
+.flow-step-heading > code {
+	flex: 0 0 auto;
+	color: #16816e;
+	font-size: 0.72rem;
+}
+.flow-list li > span {
+	display: grid;
+	width: 2rem;
+	height: 2rem;
+	place-items: center;
+	border-radius: 50%;
+	background: #e2f3ef;
+	color: #087563;
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+.flow-list p {
+	margin: 0.35rem 0 0;
+	color: #60758a;
+	font-size: 0.88rem;
+	line-height: 1.5;
+}
+.flow-list pre {
+	margin: 0.85rem 0 0;
+	border-radius: 8px;
+	padding: 0.85rem 1rem;
+	overflow-x: auto;
+	background: #122235;
+	color: #d9e4f0;
+	font-size: 0.73rem;
+	line-height: 1.58;
+}
+.comparison-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.structure-card-chosen {
+	border-color: #7bc7b7;
+	box-shadow: inset 0 3px #16816e;
+}
+.structure-card pre {
+	margin: 1rem 0;
+	border-radius: 8px;
+	padding: 1rem;
+	overflow-x: auto;
+	background: #122235;
+	color: #d9e4f0;
+	font-size: 0.75rem;
+	line-height: 1.55;
+}
+.structure-conclusion {
+	margin-bottom: 0;
+}
+.decision-grid {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.decision-grid > div {
+	display: grid;
+	gap: 0.35rem;
+	border-left: 3px solid #70bbaa;
+	padding: 0.25rem 0 0.25rem 0.9rem;
+}
+.decision-grid span {
+	color: #60758a;
+	font-size: 0.82rem;
+	line-height: 1.45;
+}
+.architecture-links {
+	margin: 1.8rem 0 0;
+}
+
+@media (max-width: 800px) {
+	.architecture-shell {
+		grid-template-columns: 1fr;
+	}
+	.architecture-sidebar {
+		position: static;
+		height: auto;
+		padding: 1rem;
+	}
+	.architecture-brand {
+		margin: 0 0 0.85rem;
+	}
+	.architecture-nav {
+		display: flex;
+		overflow-x: auto;
+	}
+	.architecture-nav a {
+		white-space: nowrap;
+	}
+	.layer-grid,
+	.comparison-grid,
+	.port-adapter-grid,
+	.naming-analogy {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 600px) {
+	.architecture-content {
+		padding: 2rem 1rem;
+	}
+	.hexagon-diagram {
+		grid-template-columns: 1fr;
+	}
+	.diagram-arrow {
+		justify-self: center;
+		transform: rotate(90deg);
+	}
+	.diagram-arrow-output {
+		order: 3;
+	}
+	.diagram-adapter-output {
+		order: 4;
+	}
+	.decision-grid {
+		grid-template-columns: 1fr;
+	}
+	.flow-step-heading {
+		align-items: start;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
 }
 .nav-item:hover {
 	background: #20364e;

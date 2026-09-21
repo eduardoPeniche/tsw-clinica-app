@@ -1,0 +1,456 @@
+---
+import '../styles/global.css';
+---
+
+<html lang="es">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="description" content="Documentación de la arquitectura de Clínica App." />
+		<title>Clínica | Arquitectura</title>
+	</head>
+	<body>
+		<main class="architecture-shell">
+			<aside class="architecture-sidebar" aria-label="Navegación de arquitectura">
+				<a class="architecture-brand" href="/">
+					Clínica App
+				</a>
+				<nav class="architecture-nav" aria-label="Secciones">
+					<a href="#vision">Visión general</a>
+					<a href="#capas">Capas</a>
+					<a href="#puertos-adaptadores">Puertos y adaptadores</a>
+					<a href="#flujo">Flujo de una cita</a>
+					<a href="#comparacion">Comparación</a>
+					<a href="#decisiones">Decisiones</a>
+				</nav>
+			</aside>
+
+			<article class="architecture-content">
+				<header id="vision" class="architecture-hero">
+					<p class="eyebrow">Documentación técnica</p>
+					<h1>Arquitectura de Clínica App</h1>
+					<p>
+						El sistema utiliza arquitectura hexagonal, también llamada <em>ports and adapters</em>.
+						Su objetivo es que las reglas médicas se mantengan independientes de FastAPI, SQLite y
+						de la interfaz web.
+					</p>
+				</header>
+
+				<section id="capas" class="architecture-section" aria-labelledby="capas-title">
+					<div class="architecture-section-heading">
+						<p class="eyebrow">El núcleo y sus conexiones</p>
+						<h2 id="capas-title">Capas y dirección de dependencias</h2>
+					</div>
+					<div
+						class="hexagon-diagram"
+						aria-label="Los adaptadores se conectan a la aplicación, que depende del dominio"
+					>
+						<div class="diagram-adapter diagram-adapter-input">
+							<span>Adaptador de entrada</span>
+							<strong>FastAPI</strong>
+							<code>adapters/http/</code>
+						</div>
+						<div class="diagram-arrow diagram-arrow-input" aria-hidden="true">
+							→
+						</div>
+						<div class="diagram-core">
+							<div class="diagram-application">
+								<span>Aplicación</span>
+								<strong>Casos de uso · Puertos</strong>
+							</div>
+							<div class="diagram-domain">
+								<span>Dominio</span>
+								<strong>Entidades · Política de agenda</strong>
+							</div>
+						</div>
+						<div class="diagram-arrow diagram-arrow-output" aria-hidden="true">
+							→
+						</div>
+						<div class="diagram-adapter diagram-adapter-output">
+							<span>Adaptador de salida</span>
+							<strong>SQLite</strong>
+							<code>adapters/persistence/sqlite/</code>
+						</div>
+					</div>
+					<p class="architecture-note">
+						Las flechas muestran el flujo de una operación. Las dependencias de código apuntan hacia
+						el centro: el dominio no importa FastAPI ni SQLite.
+					</p>
+					<div class="layer-grid">
+						<section class="layer-card layer-domain">
+							<p>01 · Dominio</p>
+							<h3>Conceptos y reglas puras</h3>
+							<p>
+								Representa pacientes, médicos, citas y las reglas para definir cuándo un horario es
+								válido.
+							</p>
+							<code>domain/entities/ · domain/policies/agenda.py</code>
+						</section>
+						<section class="layer-card layer-application">
+							<p>02 · Aplicación</p>
+							<h3>Acciones del sistema</h3>
+							<p>
+								Coordina cada caso de uso y declara los contratos que necesita para guardar o
+								consultar datos.
+							</p>
+							<code>application/use_cases/ · application/ports/</code>
+						</section>
+						<section class="layer-card layer-adapters">
+							<p>03 · Adaptadores</p>
+							<h3>Detalles del exterior</h3>
+							<p>
+								Traduce HTTP y SQLite al lenguaje de la aplicación, sin alojar reglas de agenda.
+							</p>
+							<code>adapters/http/ · adapters/persistence/</code>
+						</section>
+					</div>
+				</section>
+
+				<section
+					id="puertos-adaptadores"
+					class="architecture-section"
+					aria-labelledby="puertos-adaptadores-title"
+				>
+					<div class="architecture-section-heading">
+						<p class="eyebrow">La idea central</p>
+						<h2 id="puertos-adaptadores-title">¿Qué son un puerto y un adaptador?</h2>
+					</div>
+					<p class="comparison-intro">
+						Un puerto describe una necesidad del núcleo; un adaptador es una solución concreta para
+						esa necesidad. El núcleo conoce el contrato, pero no la tecnología que lo cumple.
+					</p>
+					<div class="naming-analogy">
+						<div>
+							<p class="structure-label">¿Por qué “puerto”?</p>
+							<p>
+								Como el puerto de carga de una laptop, define una conexión con forma y reglas
+								conocidas. La laptop solicita energía mediante ese punto, sin saber qué cargador
+								específico se conectará. En la aplicación, <code>CitaRepository</code> es ese punto
+								acordado: declara las operaciones que el núcleo puede solicitar.
+							</p>
+						</div>
+						<div>
+							<p class="structure-label">¿Por qué “adaptador”?</p>
+							<p>
+								Como el adaptador que permite conectar un cargador con otro tipo de enchufe, se
+								encarga de traducir entre dos mundos. <code>SQLiteCitaRepository</code> adapta la
+								petición de guardar una <code>Cita</code> al lenguaje de SQLite: conexión, SQL y
+								filas de datos.
+							</p>
+						</div>
+					</div>
+					<p class="naming-summary">
+						La analogía ayuda a recordar la dirección correcta: el núcleo define su puerto; la
+						infraestructura se adapta a él, no al revés.
+					</p>
+					<div class="port-adapter-grid">
+						<section class="port-adapter-card port-card">
+							<p class="structure-label">Puerto</p>
+							<h3>El contrato que pide la aplicación</h3>
+							<p>
+								Es una interfaz definida desde el punto de vista del caso de uso. Dice <em>qué</em>
+								necesita hacer la aplicación, sin decidir <em>cómo</em> se realiza.
+							</p>
+							<pre><code># application/ports/cita_repository.py
+from typing import Protocol
+
+class CitaRepository(Protocol):
+    def guardar(self, cita: Cita) -> Cita: ...
+
+    def medico_tiene_cita_activa_en_intervalo(
+        self, medico_id: UUID, inicio: datetime, fin: datetime
+    ) -> bool: ...</code></pre>
+							<p class="port-adapter-example">
+								<strong>Ejemplo:</strong> <code>CrearCita</code> necesita saber si existe un
+								traslape y guardar una cita. No necesita saber si los datos viven en SQLite,
+								PostgreSQL o memoria.
+							</p>
+						</section>
+						<section class="port-adapter-card adapter-card">
+							<p class="structure-label">Adaptador</p>
+							<h3>La implementación en el mundo exterior</h3>
+							<p>
+								Es una clase o módulo que cumple un puerto usando una tecnología específica. Puede
+								reemplazarse sin alterar la regla de negocio.
+							</p>
+							<pre><code># adapters/persistence/sqlite/cita_repository.py
+import sqlite3
+
+class SQLiteCitaRepository:
+    def guardar(self, cita: Cita) -> Cita:
+        with self.database.connect() as connection:
+            connection.execute("INSERT INTO citas VALUES (...)" )
+        return cita</code></pre>
+							<p class="port-adapter-example">
+								<strong>Ejemplo:</strong> <code>SQLiteCitaRepository</code> implementa el contrato
+								con SQL. En el futuro, <code>PostgresCitaRepository</code> podría ocupar su lugar
+								sin modificar <code>CrearCita</code>.
+							</p>
+						</section>
+					</div>
+					<div
+						class="port-adapter-connection"
+						aria-label="El caso de uso depende del puerto, y el adaptador lo implementa"
+					>
+						<code>CrearCita</code>
+						<span>depende de</span>
+						<code>CitaRepository</code>
+						<span>lo implementa</span>
+						<code>SQLiteCitaRepository</code>
+					</div>
+				</section>
+
+				<section id="flujo" class="architecture-section" aria-labelledby="flujo-title">
+					<div class="architecture-section-heading">
+						<p class="eyebrow">Ejemplo real</p>
+						<h2 id="flujo-title">Crear una cita</h2>
+					</div>
+					<p class="comparison-intro">
+						Este recorrido sigue una solicitud real desde <code>POST /citas</code> hasta SQLite.
+						Cada paso vive en un archivo distinto porque cada uno tiene una responsabilidad
+						distinta.
+					</p>
+					<ol class="flow-list">
+						<li class="flow-step">
+							<span>1</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>La ruta adapta HTTP al caso de uso</strong>
+									<code>adapters/http/routes/citas.py</code>
+								</div>
+								<p>
+									FastAPI valida el cuerpo con <code>CitaInput</code>; la ruta no contiene reglas de
+									horario y delega al contenedor.
+								</p>
+								<pre><code>from fastapi import APIRouter, status
+from clinica_app.adapters.http.dependencies import ContainerDep
+from clinica_app.adapters.http.schemas.cita import CitaInput, CitaOutput
+
+@router.post("/citas", status_code=status.HTTP_201_CREATED)
+def crear(data: CitaInput, services: ContainerDep) -> CitaOutput:
+    return _output(services.crear_cita.ejecutar(**data.model_dump()))</code></pre>
+							</div>
+						</li>
+						<li class="flow-step">
+							<span>2</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>El caso de uso coordina el dominio</strong>
+									<code>application/use_cases/cita_crear.py</code>
+								</div>
+								<p>
+									Este archivo importa contratos, entidades y política; nunca importa FastAPI, SQL
+									ni <code>sqlite3</code>.
+								</p>
+								<pre><code>from clinica_app.application.ports import CitaRepository
+from clinica_app.domain.entities import Cita
+from clinica_app.domain.policies import PoliticaAgenda
+
+class CrearCita:
+    def ejecutar(self, paciente_id, medico_id, fecha_hora) -> Cita:
+        fecha_hora = self.politica_agenda.normalizar_y_validar(fecha_hora)
+        if self.cita_repositorio.medico_tiene_cita_activa_en_intervalo(...):
+            raise HorarioNoDisponibleError(...)
+        return self.cita_repositorio.guardar(Cita(paciente_id, medico_id, fecha_hora))</code></pre>
+							</div>
+						</li>
+						<li class="flow-step">
+							<span>3</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>La política valida las reglas clínicas</strong>
+									<code>domain/policies/agenda.py</code>
+								</div>
+								<p>
+									El dominio normaliza la zona <code>America/Merida</code> y rechaza fines de
+									semana, horarios fuera de atención y minutos fuera de un slot.
+								</p>
+								<pre><code>@dataclass(frozen=True)
+class PoliticaAgenda:
+    dias_atencion: frozenset[int]
+    hora_apertura: time
+    hora_cierre: time
+    duracion_cita: timedelta
+    zona_horaria: ZoneInfo
+
+    def fin_de_cita(self, fecha_hora: datetime) -> datetime:
+        return fecha_hora + self.duracion_cita</code></pre>
+							</div>
+						</li>
+						<li class="flow-step">
+							<span>4</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>El puerto define lo que la aplicación necesita</strong>
+									<code>application/ports/cita_repository.py</code>
+								</div>
+								<p>
+									<code>Protocol</code> expresa el contrato sin elegir una base de datos. El caso de
+									uso depende de esta interfaz estructural.
+								</p>
+								<pre><code>from typing import Protocol
+from clinica_app.domain.entities import Cita
+
+class CitaRepository(Protocol):
+    def guardar(self, cita: Cita) -> Cita: ...
+
+    def medico_tiene_cita_activa_en_intervalo(
+        self, medico_id: UUID, inicio: datetime, fin: datetime
+    ) -> bool: ...</code></pre>
+							</div>
+						</li>
+						<li class="flow-step">
+							<span>5</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>El adaptador implementa ese puerto con SQLite</strong>
+									<code>adapters/persistence/sqlite/cita_repository.py</code>
+								</div>
+								<p>
+									Esta es la única parte del flujo que conoce SQL. Convierte filas en entidades y
+									guarda la cita real.
+								</p>
+								<pre><code>import sqlite3
+from clinica_app.domain.entities import Cita
+
+class SQLiteCitaRepository:
+    def guardar(self, cita: Cita) -> Cita:
+        with self.database.connect() as connection:
+            connection.execute(
+                "INSERT INTO citas VALUES (?, ?, ?, ?, ?)",
+                (..., cita.fecha_hora.isoformat(), cita.estado.value),
+            )
+        return cita</code></pre>
+							</div>
+						</li>
+						<li class="flow-step">
+							<span>6</span>
+							<div>
+								<div class="flow-step-heading">
+									<strong>El contenedor conecta las dependencias</strong>
+									<code>container.py</code>
+								</div>
+								<p>
+									La composición ocurre en un único borde: el caso de uso recibe una implementación
+									concreta sin importarla.
+								</p>
+								<pre><code>citas = SQLiteCitaRepository(database)
+politica_agenda = PoliticaAgenda(...)
+
+crear_cita = CrearCita(
+    cita_repositorio=citas,
+    paciente_repositorio=pacientes,
+    medico_repositorio=medicos,
+    politica_agenda=politica_agenda,
+)</code></pre>
+							</div>
+						</li>
+					</ol>
+				</section>
+
+				<section id="comparacion" class="architecture-section" aria-labelledby="comparacion-title">
+					<div class="architecture-section-heading">
+						<p class="eyebrow">Decisión de organización</p>
+						<h2 id="comparacion-title">Módulos funcionales vs. hexagonal por tipo técnico</h2>
+					</div>
+					<p class="comparison-intro">
+						Ambas opciones son válidas. Para este proyecto se eligió la segunda porque deja visibles
+						los límites de la arquitectura que se busca aprender.
+					</p>
+					<div class="comparison-grid">
+						<section class="structure-card">
+							<p class="structure-label">Alternativa evaluada</p>
+							<h3>Por módulos funcionales</h3>
+							<p>Cada área del negocio reúne sus rutas, servicios y acceso a datos.</p>
+							<pre><code>app/
+  pacientes/
+    routes.py
+    service.py
+    repository.py
+  medicos/
+    routes.py
+    service.py
+    repository.py
+  citas/
+    routes.py
+    service.py
+    repository.py</code></pre>
+							<p class="structure-conclusion">
+								Es directa para proyectos pequeños, pero un servicio puede terminar acoplado a
+								SQLite o FastAPI.
+							</p>
+						</section>
+						<section class="structure-card structure-card-chosen">
+							<p class="structure-label">Estructura adoptada</p>
+							<h3>Hexagonal por tipo técnico</h3>
+							<p>
+								Las carpetas representan responsabilidades y los contratos separan el núcleo de la
+								infraestructura.
+							</p>
+							<pre><code>clinica_app/
+  domain/
+    entities/
+    policies/
+  application/
+    ports/
+    use_cases/
+  adapters/
+    http/
+    persistence/sqlite/
+  container.py
+  main.py</code></pre>
+							<p class="structure-conclusion">
+								Tiene más archivos, pero permite probar la regla de agenda sin levantar HTTP ni una
+								base de datos.
+							</p>
+						</section>
+					</div>
+				</section>
+
+				<section id="decisiones" class="architecture-section" aria-labelledby="decisiones-title">
+					<div class="architecture-section-heading">
+						<p class="eyebrow">Acuerdos del proyecto</p>
+						<h2 id="decisiones-title">Decisiones clave</h2>
+					</div>
+					<div class="decision-grid">
+						<div>
+							<strong>
+								<code>dataclasses</code> y UUID
+							</strong>
+							<span>Entidades de dominio simples e independientes de frameworks.</span>
+						</div>
+						<div>
+							<strong>
+								<code>Protocol</code>
+							</strong>
+							<span>Puertos de repositorio sin herencia obligatoria.</span>
+						</div>
+						<div>
+							<strong>SQLite</strong>
+							<span>Persistencia real y sencilla para la primera entrega.</span>
+						</div>
+						<div>
+							<strong>Contenedor de aplicación</strong>
+							<span>
+								<code>container.py</code> construye y conecta las dependencias.
+							</span>
+						</div>
+						<div>
+							<strong>Agenda centralizada</strong>
+							<span>El backend entrega disponibilidad; el frontend no calcula reglas médicas.</span>
+						</div>
+						<div>
+							<strong>Astro</strong>
+							<span>Interfaz ligera con tipos generados desde OpenAPI.</span>
+						</div>
+					</div>
+					<p class="architecture-links">
+						El detalle de estas decisiones se conserva en{' '}
+						<code>docs/adr/001-arquitectura-hexagonal.md</code>y{' '}
+						<code>docs/adr/002-politica-de-agenda.md</code>.
+					</p>
+				</section>
+			</article>
+		</main>
+	</body>
+</html>
