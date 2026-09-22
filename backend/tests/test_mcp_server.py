@@ -40,10 +40,20 @@ class MCPServerTests(unittest.IsolatedAsyncioTestCase):
         )
 
         herramientas = {tool.name: tool for tool in result.tools}
-        self.assertTrue(herramientas["listar_pacientes"].annotations.read_only_hint)
-        self.assertFalse(herramientas["crear_paciente"].annotations.read_only_hint)
+        read_only_annotations = herramientas["listar_pacientes"].annotations
+        mutation_annotations = herramientas["crear_paciente"].annotations
+        deletion_annotations = herramientas["eliminar_paciente"].annotations
+        self.assertIsNotNone(read_only_annotations)
+        self.assertIsNotNone(mutation_annotations)
+        self.assertIsNotNone(deletion_annotations)
+        assert read_only_annotations is not None
+        assert mutation_annotations is not None
+        assert deletion_annotations is not None
+
+        self.assertTrue(read_only_annotations.read_only_hint)
+        self.assertFalse(mutation_annotations.read_only_hint)
         self.assertTrue(
-            herramientas["eliminar_paciente"].annotations.destructive_hint,
+            deletion_annotations.destructive_hint,
         )
 
     async def test_crear_cita_usa_el_caso_de_uso_existente(self) -> None:
