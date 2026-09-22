@@ -60,6 +60,9 @@ FastAPI  → HTTP  → adapters/http/         → casos de uso → puertos → S
 
 - FastAPI y MCP comparten reglas de negocio, política de agenda y volumen
   SQLite; el adaptador MCP no usa SQL ni rutas HTTP.
+- Las notificaciones se envían por el puerto `NotificationSender`; el adaptador
+  de consola escribe en `stderr` para no interferir con `stdio` cuando MCP crea
+  una cita.
 - El grupo `mcp` se instala en los objetivos Docker `development` y `mcp`, pero
   no en el objetivo `production`.
 - Cada sesión de agente crea un proceso MCP temporal, no un contenedor por cada

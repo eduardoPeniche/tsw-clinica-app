@@ -8,6 +8,7 @@ from clinica_app.application.exceptions import (
 from clinica_app.application.ports import (
     CitaRepository,
     MedicoRepository,
+    NotificationSender,
     PacienteRepository,
 )
 from clinica_app.domain.entities import Cita
@@ -21,11 +22,13 @@ class CrearCita:
         paciente_repositorio: PacienteRepository,
         medico_repositorio: MedicoRepository,
         politica_agenda: PoliticaAgenda,
+        notification_sender: NotificationSender,
     ) -> None:
         self.cita_repositorio = cita_repositorio
         self.paciente_repositorio = paciente_repositorio
         self.medico_repositorio = medico_repositorio
         self.politica_agenda = politica_agenda
+        self.notification_sender = notification_sender
 
     def ejecutar(
         self,
@@ -33,9 +36,11 @@ class CrearCita:
         medico_id: UUID,
         fecha_hora: datetime,
     ) -> Cita:
-        if self.paciente_repositorio.obtener_por_id(paciente_id) is None:
+        paciente = self.paciente_repositorio.obtener_por_id(paciente_id)
+        if paciente is None:
             raise RecursoNoEncontradoError("El paciente no existe.")
-        if self.medico_repositorio.obtener_por_id(medico_id) is None:
+        medico = self.medico_repositorio.obtener_por_id(medico_id)
+        if medico is None:
             raise RecursoNoEncontradoError("El médico no existe.")
         fecha_hora = self.politica_agenda.normalizar_y_validar(fecha_hora)
         if self.cita_repositorio.medico_tiene_cita_activa_en_intervalo(
@@ -45,7 +50,9 @@ class CrearCita:
         ):
             raise HorarioNoDisponibleError(
                 "El médico ya tiene una cita activa en ese horario."
-            )
+        )
 
         cita = Cita(paciente_id, medico_id, fecha_hora)
-        return self.cita_repositorio.guardar(cita)
+        cita = self.cita_repositorio.guardar(cita)
+        self.notification_sender.send_appointment_created(cita, paciente, medico)
+        return cita

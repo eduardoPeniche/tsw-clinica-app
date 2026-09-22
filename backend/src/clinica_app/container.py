@@ -4,6 +4,7 @@ from pathlib import Path
 
 from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
 from clinica_app.adapters.configuration.settings import agenda_settings_from_environment
+from clinica_app.adapters.notifications import ConsoleNotificationSender
 from clinica_app.adapters.persistence.sqlite.database import SQLiteDatabase
 from clinica_app.adapters.persistence.sqlite.medico_repository import SQLiteMedicoRepository
 from clinica_app.adapters.persistence.sqlite.paciente_repository import (
@@ -56,6 +57,7 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
     pacientes = SQLitePacienteRepository(database)
     medicos = SQLiteMedicoRepository(database)
     citas = SQLiteCitaRepository(database)
+    notification_sender = ConsoleNotificationSender()
     agenda_settings = agenda_settings_from_environment()
     politica_agenda = PoliticaAgenda(
         agenda_settings.dias_atencion,
@@ -76,7 +78,13 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
         listar_medicos=ListarMedicos(medicos),
         actualizar_medico=ActualizarMedico(medicos),
         eliminar_medico=EliminarMedico(medicos),
-        crear_cita=CrearCita(citas, pacientes, medicos, politica_agenda),
+        crear_cita=CrearCita(
+            citas,
+            pacientes,
+            medicos,
+            politica_agenda,
+            notification_sender,
+        ),
         cancelar_cita=CancelarCita(citas),
         listar_citas_por_medico=ListarCitasPorMedico(citas),
         consultar_disponibilidad_medico=ConsultarDisponibilidadMedico(citas, politica_agenda),
