@@ -30,6 +30,7 @@ configuración que reconoce, pero invoca el mismo lanzador:
 
 - `.codex/config.toml` para Codex.
 - `.mcp.json` para Claude Code.
+- `.grok/config.toml` para Grok Build.
 
 Los archivos de configuración no contienen credenciales. Un host debe tratar
 el proyecto como confiable antes de ejecutar un servidor `stdio` definido por

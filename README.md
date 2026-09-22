@@ -85,6 +85,8 @@ donde cada integrante haya clonado el repositorio.
   requieren aprobación.
 - Claude Code carga `.mcp.json` y solicita aprobar el servidor de proyecto la
   primera vez.
+- Grok Build carga `.grok/config.toml`. También reconoce `.mcp.json` por
+  compatibilidad, pero la configuración nativa tiene prioridad.
 
 En ambos casos, abre el agente desde la raíz del repositorio con Docker u
 OrbStack en ejecución. El agente inicia una sola instancia MCP durante la
