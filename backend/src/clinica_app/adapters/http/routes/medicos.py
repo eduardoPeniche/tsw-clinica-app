@@ -28,7 +28,9 @@ def obtener(medico_id: UUID, services: ContainerDep) -> MedicoOutput:
 
 
 @router.put("/{medico_id}", response_model=MedicoOutput)
-def actualizar(medico_id: UUID, data: MedicoInput, services: ContainerDep) -> MedicoOutput:
+def actualizar(
+    medico_id: UUID, data: MedicoInput, services: ContainerDep
+) -> MedicoOutput:
     return _output(services.actualizar_medico.ejecutar(medico_id, **data.model_dump()))
 
 

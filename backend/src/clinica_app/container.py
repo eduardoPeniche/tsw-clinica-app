@@ -2,11 +2,13 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
 from clinica_app.adapters.configuration.settings import agenda_settings_from_environment
 from clinica_app.adapters.notifications import ConsoleNotificationSender
+from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
 from clinica_app.adapters.persistence.sqlite.database import SQLiteDatabase
-from clinica_app.adapters.persistence.sqlite.medico_repository import SQLiteMedicoRepository
+from clinica_app.adapters.persistence.sqlite.medico_repository import (
+    SQLiteMedicoRepository,
+)
 from clinica_app.adapters.persistence.sqlite.paciente_repository import (
     SQLitePacienteRepository,
 )
@@ -87,6 +89,8 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
         ),
         cancelar_cita=CancelarCita(citas),
         listar_citas_por_medico=ListarCitasPorMedico(citas),
-        consultar_disponibilidad_medico=ConsultarDisponibilidadMedico(citas, politica_agenda),
+        consultar_disponibilidad_medico=ConsultarDisponibilidadMedico(
+            citas, politica_agenda
+        ),
         listar_citas_por_paciente=ListarCitasPorPaciente(citas),
     )

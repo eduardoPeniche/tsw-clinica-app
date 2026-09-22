@@ -71,7 +71,9 @@ def listar_por_medico_en_rango(
 ) -> list[CitaOutput]:
     return [
         _output(item)
-        for item in services.listar_citas_por_medico.ejecutar_en_rango(medico_id, desde, hasta)
+        for item in services.listar_citas_por_medico.ejecutar_en_rango(
+            medico_id, desde, hasta
+        )
     ]
 
 
@@ -98,10 +100,14 @@ def consultar_disponibilidad_en_rango(
     hasta: Annotated[date, Query()],
     services: ContainerDep,
 ) -> DisponibilidadRangoAgendaOutput:
-    dias = services.consultar_disponibilidad_medico.ejecutar_en_rango(medico_id, desde, hasta)
+    dias = services.consultar_disponibilidad_medico.ejecutar_en_rango(
+        medico_id, desde, hasta
+    )
     return DisponibilidadRangoAgendaOutput(
         medico_id=medico_id,
-        zona_horaria=str(services.consultar_disponibilidad_medico.politica_agenda.zona_horaria),
+        zona_horaria=str(
+            services.consultar_disponibilidad_medico.politica_agenda.zona_horaria
+        ),
         duracion_minutos=int(
             services.consultar_disponibilidad_medico.politica_agenda.duracion_cita.total_seconds()
             // 60
@@ -112,4 +118,7 @@ def consultar_disponibilidad_en_rango(
 
 @router.get("/pacientes/{paciente_id}/citas", response_model=list[CitaOutput])
 def listar_por_paciente(paciente_id: UUID, services: ContainerDep) -> list[CitaOutput]:
-    return [_output(item) for item in services.listar_citas_por_paciente.ejecutar(paciente_id)]
+    return [
+        _output(item)
+        for item in services.listar_citas_por_paciente.ejecutar(paciente_id)
+    ]

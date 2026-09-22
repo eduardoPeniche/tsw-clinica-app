@@ -1,7 +1,7 @@
+import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-import sqlite3
-from typing import Generator
 
 
 class SQLiteDatabase:
@@ -9,7 +9,7 @@ class SQLiteDatabase:
         self.path = str(path)
 
     @contextmanager
-    def connect(self) -> Generator[sqlite3.Connection, None, None]:
+    def connect(self) -> Generator[sqlite3.Connection]:
         connection = sqlite3.connect(self.path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")

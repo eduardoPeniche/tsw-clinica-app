@@ -11,12 +11,17 @@ class SQLiteMedicoRepository:
 
     def guardar(self, medico: Medico) -> Medico:
         with self.database.connect() as c:
-            c.execute("INSERT INTO medicos VALUES (?, ?, ?)", (str(medico.id), medico.nombre, medico.especialidad))
+            c.execute(
+                "INSERT INTO medicos VALUES (?, ?, ?)",
+                (str(medico.id), medico.nombre, medico.especialidad),
+            )
         return medico
 
     def obtener_por_id(self, medico_id: UUID) -> Medico | None:
         with self.database.connect() as c:
-            fila = c.execute("SELECT * FROM medicos WHERE id=?", (str(medico_id),)).fetchone()
+            fila = c.execute(
+                "SELECT * FROM medicos WHERE id=?", (str(medico_id),)
+            ).fetchone()
         return self._entidad(fila) if fila else None
 
     def listar(self) -> list[Medico]:
@@ -26,7 +31,10 @@ class SQLiteMedicoRepository:
 
     def actualizar(self, medico: Medico) -> Medico:
         with self.database.connect() as c:
-            c.execute("UPDATE medicos SET nombre=?, especialidad=? WHERE id=?", (medico.nombre, medico.especialidad, str(medico.id)))
+            c.execute(
+                "UPDATE medicos SET nombre=?, especialidad=? WHERE id=?",
+                (medico.nombre, medico.especialidad, str(medico.id)),
+            )
         return medico
 
     def eliminar(self, medico_id: UUID) -> bool:

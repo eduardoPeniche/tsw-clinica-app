@@ -1,6 +1,6 @@
+import os
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
-import os
 from zoneinfo import ZoneInfo
 
 
@@ -26,7 +26,9 @@ def _dias_atencion() -> frozenset[int]:
     try:
         dias = frozenset(int(day) for day in value.split(","))
     except ValueError as error:
-        raise ValueError("APPOINTMENT_WEEKDAYS debe ser una lista de días entre 0 y 6.") from error
+        raise ValueError(
+            "APPOINTMENT_WEEKDAYS debe ser una lista de días entre 0 y 6."
+        ) from error
 
     if not dias or not dias.issubset(range(7)):
         raise ValueError("APPOINTMENT_WEEKDAYS debe contener días entre 0 y 6.")

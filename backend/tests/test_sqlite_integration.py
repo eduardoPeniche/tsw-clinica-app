@@ -1,23 +1,25 @@
-from datetime import date, datetime, time, timedelta
-from pathlib import Path
 import tempfile
 import unittest
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from clinica_app.adapters.persistence.sqlite import SQLiteDatabase
 from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
-from clinica_app.adapters.persistence.sqlite.medico_repository import SQLiteMedicoRepository
+from clinica_app.adapters.persistence.sqlite.medico_repository import (
+    SQLiteMedicoRepository,
+)
 from clinica_app.adapters.persistence.sqlite.paciente_repository import (
     SQLitePacienteRepository,
 )
 from clinica_app.application.exceptions import HorarioNoDisponibleError
-from clinica_app.domain.entities import Cita, EstadoCita, Medico, Paciente
 from clinica_app.application.use_cases import (
     CancelarCita,
     CrearCita,
     CrearMedico,
     CrearPaciente,
 )
+from clinica_app.domain.entities import Cita, EstadoCita, Medico, Paciente
 from clinica_app.domain.policies import PoliticaAgenda
 
 
@@ -107,9 +109,7 @@ class SQLiteIntegrationTests(unittest.TestCase):
             self.medicos,
             self.politica_agenda,
             self.notification_sender,
-        ).ejecutar(
-            paciente.id, medico.id, horario
-        )
+        ).ejecutar(paciente.id, medico.id, horario)
         cancelar = CancelarCita(self.citas)
 
         cancelar.ejecutar(cita.id)
@@ -161,4 +161,6 @@ class SQLiteIntegrationTests(unittest.TestCase):
             self.notification_sender,
         ).ejecutar(paciente.id, medico.id, datetime(2026, 10, 1, 9, 0))
 
-        self.assertEqual(self.notification_sender.appointments, [(cita, paciente, medico)])
+        self.assertEqual(
+            self.notification_sender.appointments, [(cita, paciente, medico)]
+        )

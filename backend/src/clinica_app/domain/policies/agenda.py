@@ -1,11 +1,11 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import Enum
-from typing import Iterable
 from zoneinfo import ZoneInfo
 
-from clinica_app.domain.exceptions import ValidacionDominioError
 from clinica_app.domain.entities import Cita, EstadoCita
+from clinica_app.domain.exceptions import ValidacionDominioError
 
 
 class EstadoSlot(str, Enum):
@@ -41,19 +41,31 @@ class PoliticaAgenda:
         fecha_local = self._en_zona_de_clinica(fecha_hora)
 
         if fecha_local.weekday() not in self.dias_atencion:
-            raise ValidacionDominioError("La clínica atiende únicamente de lunes a viernes.")
+            raise ValidacionDominioError(
+                "La clínica atiende únicamente de lunes a viernes."
+            )
         if fecha_local.second or fecha_local.microsecond:
-            raise ValidacionDominioError("Las citas deben iniciar en un slot exacto de 30 minutos.")
+            raise ValidacionDominioError(
+                "Las citas deben iniciar en un slot exacto de 30 minutos."
+            )
 
-        apertura = datetime.combine(fecha_local.date(), self.hora_apertura, self.zona_horaria)
-        cierre = datetime.combine(fecha_local.date(), self.hora_cierre, self.zona_horaria)
+        apertura = datetime.combine(
+            fecha_local.date(), self.hora_apertura, self.zona_horaria
+        )
+        cierre = datetime.combine(
+            fecha_local.date(), self.hora_cierre, self.zona_horaria
+        )
         if fecha_local < apertura or fecha_local + self.duracion_cita > cierre:
-            raise ValidacionDominioError("La cita debe estar dentro del horario de atención: 09:00 a 17:00.")
+            raise ValidacionDominioError(
+                "La cita debe estar dentro del horario de atención: 09:00 a 17:00."
+            )
 
         minutos_desde_apertura = int((fecha_local - apertura).total_seconds() // 60)
         duracion_en_minutos = int(self.duracion_cita.total_seconds() // 60)
         if minutos_desde_apertura % duracion_en_minutos:
-            raise ValidacionDominioError("Las citas sólo pueden iniciar cada 30 minutos.")
+            raise ValidacionDominioError(
+                "Las citas sólo pueden iniciar cada 30 minutos."
+            )
 
         return fecha_local
 
@@ -72,7 +84,9 @@ class PoliticaAgenda:
         ahora = self._en_zona_de_clinica(ahora or datetime.now(self.zona_horaria))
         apertura = datetime.combine(fecha, self.hora_apertura, self.zona_horaria)
         cierre = datetime.combine(fecha, self.hora_cierre, self.zona_horaria)
-        citas_activas = [cita for cita in citas if cita.estado is not EstadoCita.CANCELADA]
+        citas_activas = [
+            cita for cita in citas if cita.estado is not EstadoCita.CANCELADA
+        ]
         slots: list[SlotDisponibilidad] = []
         inicio = apertura
 
@@ -94,7 +108,9 @@ class PoliticaAgenda:
     ) -> EstadoSlot:
         if inicio < ahora:
             return EstadoSlot.NO_DISPONIBLE
-        if any(self._se_traslapan(inicio, fin, cita.fecha_hora) for cita in citas_activas):
+        if any(
+            self._se_traslapan(inicio, fin, cita.fecha_hora) for cita in citas_activas
+        ):
             return EstadoSlot.OCUPADO
         return EstadoSlot.LIBRE
 
@@ -112,7 +128,9 @@ class PoliticaAgenda:
                 return slot.inicio
         return None
 
-    def _se_traslapan(self, inicio: datetime, fin: datetime, inicio_existente: datetime) -> bool:
+    def _se_traslapan(
+        self, inicio: datetime, fin: datetime, inicio_existente: datetime
+    ) -> bool:
         inicio_existente = self._en_zona_de_clinica(inicio_existente)
         fin_existente = self.fin_de_cita(inicio_existente)
         return inicio_existente < fin and inicio < fin_existente

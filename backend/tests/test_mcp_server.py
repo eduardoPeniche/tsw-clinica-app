@@ -1,7 +1,7 @@
-from datetime import date, datetime
-from pathlib import Path
 import tempfile
 import unittest
+from datetime import date, datetime
+from pathlib import Path
 
 from mcp import Client
 
@@ -118,7 +118,9 @@ class MCPServerTests(unittest.IsolatedAsyncioTestCase):
                 {"medico_id": medico_id},
             )
 
-        self.assertEqual(paciente_actualizado.structured_content["nombre"], "Ana García")
+        self.assertEqual(
+            paciente_actualizado.structured_content["nombre"], "Ana García"
+        )
         self.assertTrue(paciente_eliminado.structured_content["eliminado"])
         self.assertEqual(medico_actualizado.structured_content["nombre"], "Dra. Ruiz")
         self.assertTrue(medico_eliminado.structured_content["eliminado"])

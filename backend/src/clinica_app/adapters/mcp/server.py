@@ -9,7 +9,6 @@ from clinica_app.container import ApplicationContainer, build_container
 from clinica_app.domain.entities import Cita, Medico, Paciente
 from clinica_app.domain.policies import DisponibilidadAgenda
 
-
 READ_ONLY = ToolAnnotations(
     read_only_hint=True,
     destructive_hint=False,
@@ -137,8 +136,7 @@ def create_server(services: ApplicationContainer | None = None) -> MCPServer:
     def listar_medicos() -> list[dict[str, str]]:
         """Lista los médicos registrados con sus identificadores y especialidad."""
         return [
-            _medico_output(medico)
-            for medico in container.listar_medicos.ejecutar()
+            _medico_output(medico) for medico in container.listar_medicos.ejecutar()
         ]
 
     @server.tool(annotations=MUTATION)

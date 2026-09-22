@@ -50,7 +50,7 @@ class CrearCita:
         ):
             raise HorarioNoDisponibleError(
                 "El médico ya tiene una cita activa en ese horario."
-        )
+            )
 
         cita = Cita(paciente_id, medico_id, fecha_hora)
         cita = self.cita_repositorio.guardar(cita)
