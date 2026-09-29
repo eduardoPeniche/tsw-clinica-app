@@ -19,6 +19,18 @@ los casos de uso dependerán de puertos definidos con `Protocol`; los adaptadore
 implementarán esos puertos para HTTP, MCP, persistencia y notificaciones. Las
 reglas de negocio permanecerán en el dominio y los casos de uso.
 
+El flujo de una operación atravesará estos límites:
+
+```mermaid
+flowchart LR
+    HTTP["FastAPI"] --> UC["Casos de uso"]
+    MCP["MCP"] --> UC
+    UC --> DOM["Dominio"]
+    UC --> PORT["Puertos"]
+    PORT --> DB["Adaptador SQLite"]
+    PORT --> NOTIF["Adaptador de notificaciones"]
+```
+
 ## Consecuencias
 
 - Podremos probar las reglas con adaptadores en memoria y cambiar interfaces o

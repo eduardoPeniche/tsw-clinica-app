@@ -18,6 +18,20 @@ de aplicación que FastAPI y declarará como solo lectura las consultas; instrui
 al agente para confirmar con el usuario las operaciones que modifican datos. El servicio
 Compose será opcional y no publicará puertos.
 
+```mermaid
+sequenceDiagram
+    participant H as Host MCP
+    participant S as Adaptador MCP
+    participant U as Casos de uso
+    participant B as SQLite
+    H->>S: Inicia proceso y llama herramienta por stdio
+    S->>U: Ejecuta operación
+    U->>B: Consulta o guarda mediante puerto
+    B-->>U: Resultado
+    U-->>S: Resultado
+    S-->>H: Respuesta por stdio
+```
+
 ## Consecuencias
 
 - HTTP y MCP compartirán reglas de negocio y persistencia; mantendremos un

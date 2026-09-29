@@ -18,6 +18,12 @@ inicio válido será a las 16:30. Configuraremos estos valores por despliegue y
 aplicaremos la política en el dominio antes de comprobar la disponibilidad del
 médico. Interpretaremos las horas sin zona como hora local de la clínica.
 
+Representaremos cada cita como el intervalo semiabierto
+`[inicio, inicio + duración)`. Dos citas activas se solapan cuando
+`inicio_existente < fin_nuevo` y `inicio_nuevo < fin_existente`. Esta regla
+permite citas contiguas y detecta cruces aunque una cita histórica no comience
+en un slot exacto.
+
 ## Consecuencias
 
 - Rechazaremos horarios fuera de la política con un error de validación y los
@@ -28,3 +34,6 @@ médico. Interpretaremos las horas sin zona como hora local de la clínica.
   navegador use otra zona.
 - Los cambios de horario o duración requerirán configurar cada despliegue y
   mantener coherentes las citas existentes.
+- Un índice único parcial en SQLite protegerá contra dos citas activas del
+  mismo médico con idéntico inicio; la consulta de intervalos cubrirá además
+  solapamientos con inicios distintos.
