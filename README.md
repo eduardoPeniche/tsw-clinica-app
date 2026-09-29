@@ -7,6 +7,9 @@ backend/   API FastAPI, SQLite, pruebas y dependencias Python
 frontend/  Interfaz web Astro
 ```
 
+La [guía de arquitectura](docs/arquitectura.md) explica la organización del
+backend. Las decisiones y sus consecuencias están en los [ADR](docs/adr/).
+
 ## Ejecutar con Docker
 
 La aplicación se ejecuta desde un contenedor; no es necesario instalar las
