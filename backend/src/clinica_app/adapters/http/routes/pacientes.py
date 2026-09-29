@@ -28,8 +28,12 @@ def obtener(paciente_id: UUID, services: ContainerDep) -> PacienteOutput:
 
 
 @router.put("/{paciente_id}", response_model=PacienteOutput)
-def actualizar(paciente_id: UUID, data: PacienteInput, services: ContainerDep) -> PacienteOutput:
-    return _output(services.actualizar_paciente.ejecutar(paciente_id, **data.model_dump()))
+def actualizar(
+    paciente_id: UUID, data: PacienteInput, services: ContainerDep
+) -> PacienteOutput:
+    return _output(
+        services.actualizar_paciente.ejecutar(paciente_id, **data.model_dump())
+    )
 
 
 @router.delete("/{paciente_id}", status_code=status.HTTP_204_NO_CONTENT)
