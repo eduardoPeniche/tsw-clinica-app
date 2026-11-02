@@ -20,6 +20,14 @@ class HttpApiTests(unittest.TestCase):
         app.dependency_overrides.clear()
         self.temporary_directory.cleanup()
 
+    def test_respuestas_incluyen_encabezados_de_seguridad(self) -> None:
+        for path in ("/pacientes", "/openapi.json", "/ruta-inexistente"):
+            with self.subTest(path=path):
+                headers = self.client.get(path).headers
+                self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+                self.assertEqual(headers["Cross-Origin-Resource-Policy"], "same-origin")
+                self.assertEqual(headers["Cache-Control"], "no-store")
+
     def test_crud_paciente(self) -> None:
         created = self.client.post(
             "/pacientes",
