@@ -3,7 +3,9 @@ name = "clinica-app"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
-    { name = "Eduardo Peniche", email = "148513763+eduardoPeniche@users.noreply.github.com" }
+    { name = "Eduardo Peniche", email = "148513763+eduardoPeniche@users.noreply.github.com" },
+    { name = "Gianina Casanova" },
+    { name = "Cesar Morales" },
 ]
 requires-python = ">=3.14"
 dependencies = [
