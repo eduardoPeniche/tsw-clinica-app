@@ -1,21 +1,15 @@
 import {
 	api,
-	ApiError,
 	type Cita,
 	type DisponibilidadAgenda,
 	type Medico,
 	type Paciente,
 } from '../lib/api/client';
+import { showNotice, showError, dismissNotice } from '../lib/notice';
 
 const CLINIC_TIME_ZONE = 'America/Merida';
-const pacientesBody = byId<HTMLTableSectionElement>('pacientes-body');
-const medicosBody = byId<HTMLTableSectionElement>('medicos-body');
 const citasBody = byId<HTMLTableSectionElement>('citas-body');
-const pacienteForm = byId<HTMLFormElement>('paciente-form');
-const medicoForm = byId<HTMLFormElement>('medico-form');
 const citaForm = byId<HTMLFormElement>('cita-form');
-const pacienteDialog = byId<HTMLDialogElement>('paciente-dialog');
-const medicoDialog = byId<HTMLDialogElement>('medico-dialog');
 const citaDialog = byId<HTMLDialogElement>('cita-dialog');
 const citaPaciente = byId<HTMLSelectElement>('cita-paciente');
 const citaMedico = byId<HTMLInputElement>('cita-medico');
@@ -27,8 +21,6 @@ const calendarRegion = byId<HTMLDivElement>('calendar-region');
 const calendarPeriod = byId<HTMLElement>('calendar-period');
 const regresarSemana = byId<HTMLButtonElement>('regresar-semana');
 const agendaList = byId<HTMLElement>('agenda-list');
-const notice = byId<HTMLDivElement>('notice');
-const noticeMessage = byId<HTMLSpanElement>('notice-message');
 const noticeClose = byId<HTMLButtonElement>('notice-close');
 
 let pacientes: Paciente[] = [];
@@ -38,7 +30,6 @@ let agendaPorFecha = new Map<string, DisponibilidadAgenda>();
 let citasPorSlot = new Map<string, Cita>();
 let fechaSeleccionada = siguienteDiaLaborable(clinicDate(new Date()));
 let vistaCalendario: 'dia' | 'semana' | 'mes' = 'semana';
-let noticeTimeout: number | undefined;
 
 function byId<T extends HTMLElement>(id: string): T {
 	const element = document.getElementById(id);
@@ -117,27 +108,6 @@ function visibleDates(): string[] {
 	);
 }
 
-function showNotice(message: string, isError = false): void {
-	if (noticeTimeout) window.clearTimeout(noticeTimeout);
-	noticeMessage.textContent = message;
-	notice.hidden = false;
-	notice.classList.toggle('error', isError);
-	notice.setAttribute('role', isError ? 'alert' : 'status');
-	noticeTimeout = window.setTimeout(
-		() => {
-			notice.hidden = true;
-		},
-		isError ? 8000 : 3500,
-	);
-}
-
-function showError(error: unknown): void {
-	showNotice(
-		error instanceof ApiError ? error.message : 'No fue posible completar la operación.',
-		true,
-	);
-}
-
 function clearRows(body: HTMLTableSectionElement): void {
 	body.replaceChildren();
 }
@@ -169,39 +139,6 @@ function actionButton(
 	target.dataset.id = id;
 	target.textContent = label;
 	return target;
-}
-
-function renderPacientes(): void {
-	clearRows(pacientesBody);
-	if (!pacientes.length) return emptyRow(pacientesBody, 'Aún no hay pacientes registrados.', 4);
-	for (const paciente of pacientes) {
-		const row = pacientesBody.insertRow();
-		cell(row, paciente.nombre);
-		cell(row, paciente.fecha_nacimiento);
-		cell(row, paciente.contacto);
-		const actions = cell(row, '');
-		actions.className = 'row-actions';
-		actions.append(
-			actionButton('Editar', 'editar', paciente.id),
-			actionButton('Eliminar', 'eliminar', paciente.id, true),
-		);
-	}
-}
-
-function renderMedicos(): void {
-	clearRows(medicosBody);
-	if (!medicos.length) return emptyRow(medicosBody, 'Aún no hay médicos registrados.', 3);
-	for (const medico of medicos) {
-		const row = medicosBody.insertRow();
-		cell(row, medico.nombre);
-		cell(row, medico.especialidad);
-		const actions = cell(row, '');
-		actions.className = 'row-actions';
-		actions.append(
-			actionButton('Editar', 'editar', medico.id),
-			actionButton('Eliminar', 'eliminar', medico.id, true),
-		);
-	}
 }
 
 function renderCitasDelDia(): void {
@@ -420,6 +357,8 @@ async function cargarAgenda(): Promise<void> {
 		return;
 	}
 	calendarRegion.textContent = 'Cargando disponibilidad…';
+	clearRows(citasBody);
+	emptyRow(citasBody, 'Cargando citas…', 4);
 	try {
 		const [rango, citas] = await Promise.all([
 			api.citas.consultarDisponibilidadEnRango(calendarioMedico.value, dates[0], dates.at(-1)!),
@@ -472,6 +411,8 @@ function movePeriod(direction: -1 | 1): void {
 	void cargarAgenda();
 }
 
+const VIEWS = ['calendario', 'pacientes', 'medicos'] as const;
+
 function showView(view: string): void {
 	for (const section of document.querySelectorAll<HTMLElement>('.app-view'))
 		section.hidden = section.id !== `${view}-view`;
@@ -479,11 +420,14 @@ function showView(view: string): void {
 		button.classList.toggle('is-active', button.dataset.viewTarget === view);
 }
 
+function setView(view: string): void {
+	showView(view);
+	history.replaceState(null, '', `#${view}`);
+}
+
 async function refresh(): Promise<void> {
 	try {
 		[pacientes, medicos] = await Promise.all([api.pacientes.listar(), api.medicos.listar()]);
-		renderPacientes();
-		renderMedicos();
 		renderSelects();
 		await cargarAgenda();
 	} catch (error) {
@@ -491,40 +435,30 @@ async function refresh(): Promise<void> {
 	}
 }
 
-pacienteForm.addEventListener('submit', async (event) => {
-	event.preventDefault();
-	const data = new FormData(pacienteForm);
-	const input = {
-		nombre: value(data, 'nombre'),
-		fecha_nacimiento: value(data, 'fecha_nacimiento'),
-		contacto: value(data, 'contacto'),
-	};
+async function refreshPacientes(): Promise<void> {
 	try {
-		const id = value(data, 'id');
-		await (id ? api.pacientes.actualizar(id, input) : api.pacientes.crear(input));
-		pacienteForm.reset();
-		pacienteDialog.close();
-		showNotice(id ? 'Paciente actualizado.' : 'Paciente creado.');
-		await refresh();
+		pacientes = await api.pacientes.listar();
+		renderSelects();
+		renderCitasDelDia();
+		renderCalendar();
 	} catch (error) {
 		showError(error);
 	}
-});
-medicoForm.addEventListener('submit', async (event) => {
-	event.preventDefault();
-	const data = new FormData(medicoForm);
-	const input = { nombre: value(data, 'nombre'), especialidad: value(data, 'especialidad') };
+}
+
+async function refreshMedicos(): Promise<void> {
 	try {
-		const id = value(data, 'id');
-		await (id ? api.medicos.actualizar(id, input) : api.medicos.crear(input));
-		medicoForm.reset();
-		medicoDialog.close();
-		showNotice(id ? 'Médico actualizado.' : 'Médico creado.');
-		await refresh();
+		medicos = await api.medicos.listar();
+		renderSelects();
+		renderCalendar();
 	} catch (error) {
 		showError(error);
 	}
-});
+}
+
+window.addEventListener('pacientes:changed', () => void refreshPacientes());
+window.addEventListener('medicos:changed', () => void refreshMedicos());
+
 citaForm.addEventListener('submit', async (event) => {
 	event.preventDefault();
 	const data = new FormData(citaForm);
@@ -542,49 +476,6 @@ citaForm.addEventListener('submit', async (event) => {
 	}
 });
 
-pacientesBody.addEventListener('click', async (event) => {
-	const target = (event.target as Element).closest<HTMLButtonElement>('button[data-action]');
-	const paciente = pacientes.find((item) => item.id === target?.dataset.id);
-	if (!target || !paciente) return;
-	if (target.dataset.action === 'editar') {
-		pacienteForm.elements.namedItem('id')!.value = paciente.id;
-		pacienteForm.elements.namedItem('nombre')!.value = paciente.nombre;
-		pacienteForm.elements.namedItem('fecha_nacimiento')!.value = paciente.fecha_nacimiento;
-		pacienteForm.elements.namedItem('contacto')!.value = paciente.contacto;
-		showNotice('Editando paciente.');
-		pacienteDialog.showModal();
-		return;
-	}
-	if (confirm(`¿Eliminar a ${paciente.nombre}?`))
-		try {
-			await api.pacientes.eliminar(paciente.id);
-			showNotice('Paciente eliminado.');
-			await refresh();
-		} catch (error) {
-			showError(error);
-		}
-});
-medicosBody.addEventListener('click', async (event) => {
-	const target = (event.target as Element).closest<HTMLButtonElement>('button[data-action]');
-	const medico = medicos.find((item) => item.id === target?.dataset.id);
-	if (!target || !medico) return;
-	if (target.dataset.action === 'editar') {
-		medicoForm.elements.namedItem('id')!.value = medico.id;
-		medicoForm.elements.namedItem('nombre')!.value = medico.nombre;
-		medicoForm.elements.namedItem('especialidad')!.value = medico.especialidad;
-		showNotice('Editando médico.');
-		medicoDialog.showModal();
-		return;
-	}
-	if (confirm(`¿Eliminar a ${medico.nombre}?`))
-		try {
-			await api.medicos.eliminar(medico.id);
-			showNotice('Médico eliminado.');
-			await refresh();
-		} catch (error) {
-			showError(error);
-		}
-});
 citasBody.addEventListener('click', async (event) => {
 	const target = (event.target as Element).closest<HTMLButtonElement>(
 		'button[data-action="cancelar"]',
@@ -617,9 +508,7 @@ calendarRegion.addEventListener('click', (event) => {
 calendarioMedico.addEventListener('change', () => void cargarAgenda());
 document
 	.querySelectorAll<HTMLButtonElement>('[data-view-target]')
-	.forEach((button) =>
-		button.addEventListener('click', () => showView(button.dataset.viewTarget!)),
-	);
+	.forEach((button) => button.addEventListener('click', () => setView(button.dataset.viewTarget!)));
 document.querySelectorAll<HTMLButtonElement>('[data-calendar-view]').forEach((button) =>
 	button.addEventListener('click', () => {
 		vistaCalendario = button.dataset.calendarView as typeof vistaCalendario;
@@ -635,27 +524,11 @@ regresarSemana.addEventListener('click', () => {
 	fechaSeleccionada = siguienteDiaLaborable(clinicDate(new Date()));
 	void cargarAgenda();
 });
-noticeClose.addEventListener('click', () => {
-	if (noticeTimeout) window.clearTimeout(noticeTimeout);
-	notice.hidden = true;
-});
-byId<HTMLButtonElement>('nuevo-paciente').addEventListener('click', () => {
-	pacienteForm.reset();
-	pacienteDialog.showModal();
-});
-byId<HTMLButtonElement>('nuevo-medico').addEventListener('click', () => {
-	medicoForm.reset();
-	medicoDialog.showModal();
-});
-byId<HTMLButtonElement>('cerrar-paciente').addEventListener('click', () => pacienteDialog.close());
-byId<HTMLButtonElement>('cancelar-paciente-dialog').addEventListener('click', () =>
-	pacienteDialog.close(),
-);
-byId<HTMLButtonElement>('cerrar-medico').addEventListener('click', () => medicoDialog.close());
-byId<HTMLButtonElement>('cancelar-medico-dialog').addEventListener('click', () =>
-	medicoDialog.close(),
-);
+noticeClose.addEventListener('click', dismissNotice);
 byId<HTMLButtonElement>('cerrar-cita').addEventListener('click', () => citaDialog.close());
 byId<HTMLButtonElement>('cancelar-cita-dialog').addEventListener('click', () => citaDialog.close());
+
+const hashView = window.location.hash.slice(1);
+showView(VIEWS.includes(hashView as (typeof VIEWS)[number]) ? hashView : 'calendario');
 
 void refresh();
