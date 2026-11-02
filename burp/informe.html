@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe de análisis de tráfico con Burp Suite — Sistema de gestión de citas médicas</title>
+<style>
+  :root {
+    --tinta: #1b1f27;
+    --tinta-suave: #4a5260;
+    --acento: #1f3a5f;
+    --linea: #c9cfd8;
+    --fondo-suave: #f3f5f8;
+    --bajo: #8a5a00;
+    --info: #3d5a80;
+    --ok: #2e6b3f;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0;
+    color: var(--tinta);
+    background: #fff;
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    line-height: 1.55;
+    counter-reset: seccion;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  header.portada { border-bottom: 3px solid var(--acento); padding-bottom: 24px; margin-bottom: 32px; }
+  header.portada .etiqueta {
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--tinta-suave); margin: 0 0 8px;
+  }
+  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; color: var(--acento); }
+  header.portada p.sub { margin: 0; color: var(--tinta-suave); font-size: 1.05rem; }
+
+  h2 {
+    counter-increment: seccion;
+    font-size: 1.35rem; color: var(--acento); margin: 48px 0 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--linea);
+  }
+  h2::before { content: counter(seccion) ". "; }
+  h3 { font-size: 1.08rem; margin: 28px 0 8px; color: var(--tinta); }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code, pre { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.86em; }
+  code { background: var(--fondo-suave); padding: 1px 5px; border-radius: 2px; }
+  pre {
+    background: #1d232d; color: #e6e9ee; padding: 14px 16px; overflow-x: auto;
+    border-radius: 3px; line-height: 1.45; margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  a { color: var(--acento); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 8px 0 18px;
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.86rem;
+  }
+  caption {
+    caption-side: top; text-align: left; font-weight: 700; padding: 0 0 6px;
+    color: var(--tinta-suave); font-size: 0.82rem; letter-spacing: 0.02em;
+  }
+  th, td { border: 1px solid var(--linea); padding: 7px 10px; text-align: left; vertical-align: top; }
+  thead th { background: var(--acento); color: #fff; font-weight: 600; }
+  tbody th { background: var(--fondo-suave); font-weight: 600; width: 28%; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .riesgo {
+    display: inline-block; font-family: Arial, Helvetica, sans-serif; font-size: 0.74rem;
+    font-weight: 700; padding: 1px 7px; border: 1px solid; border-radius: 2px; white-space: nowrap;
+  }
+  .riesgo.bajo { color: var(--bajo); border-color: var(--bajo); }
+  .riesgo.info { color: var(--info); border-color: var(--info); }
+  .estado { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+  .estado.resuelto { color: var(--ok); }
+  .estado.ausente { color: var(--bajo); }
+
+  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0 24px; }
+  .cifra { border: 1px solid var(--linea); border-top: 3px solid var(--acento); padding: 12px 14px; background: var(--fondo-suave); }
+  .cifra .valor { font-family: Arial, Helvetica, sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--acento); }
+  .cifra .texto { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; color: var(--tinta-suave); }
+
+  figure { margin: 18px 0 24px; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--linea); }
+  figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--linea); background: #fff; }
+  figcaption { font-family: Arial, Helvetica, sans-serif; font-size: 0.8rem; color: var(--tinta-suave); margin-top: 6px; }
+
+  .nota { border-left: 4px solid var(--acento); background: var(--fondo-suave); padding: 10px 14px; margin: 14px 0 18px; }
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--tinta-suave); font-family: Arial, Helvetica, sans-serif; }
+
+  @media (max-width: 720px) {
+    .cifras { grid-template-columns: repeat(2, 1fr); }
+    main { padding: 28px 18px 56px; }
+  }
+  @media print {
+    main { max-width: none; padding: 0; }
+    h2, h3, figure, table, pre { break-inside: avoid; }
+    pre { background: #fff; color: #000; border: 1px solid var(--linea); }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header class="portada">
+  <p class="etiqueta">Informe técnico de seguridad</p>
+  <h1>Análisis de tráfico con Burp Suite del Sistema de gestión de citas médicas</h1>
+  <p class="sub">Comparación de las respuestas HTTP antes y después de las correcciones</p>
+</header>
+
+<table>
+  <caption>Datos del documento</caption>
+  <tbody>
+    <tr><th scope="row">Autores</th><td>Eduardo Peniche, Gianina Casanova, Cesar Morales</td></tr>
+    <tr><th scope="row">Fecha del informe</th><td>2 de noviembre de 2026</td></tr>
+    <tr><th scope="row">Herramienta</th><td>Burp Suite Community Edition v2026.9.2 (proyecto temporal)</td></tr>
+    <tr><th scope="row">Método</th><td>Análisis manual del tráfico con el proxy y el navegador integrados de Burp</td></tr>
+    <tr><th scope="row">Objeto analizado</th><td>Frontend Astro y API FastAPI, en dos versiones del código</td></tr>
+    <tr><th scope="row">Informe relacionado</th><td><a href="../zap/informe.html">Análisis dinámico con OWASP ZAP</a></td></tr>
+  </tbody>
+</table>
+
+<h2>Resumen ejecutivo</h2>
+<p>Este informe usa Burp Suite para confirmar los hallazgos H-01, H-02 y H-03 del informe de ZAP. Burp Community no tiene escáner automático. La confirmación se hace con tráfico real. Se compara la misma interacción en dos versiones del sistema.</p>
+<p>La versión <strong>antes</strong> usa el commit <code>af3b590</code>, anterior a la corrección. La versión <strong>después</strong> usa el código de <code>main</code> en el commit <code>6dc41ad</code>. En ambas versiones se ejecutó el mismo flujo desde la interfaz web. Burp registró las peticiones y las respuestas.</p>
+<p>La versión anterior no envía ninguno de los tres encabezados de seguridad. La versión posterior envía los tres, en las respuestas de lectura y de escritura. Burp confirma la resolución de H-01, H-02 y H-03 con una herramienta distinta a ZAP.</p>
+
+<div class="cifras">
+  <div class="cifra"><div class="valor">0 de 3</div><div class="texto">Encabezados presentes, antes</div></div>
+  <div class="cifra"><div class="valor">3 de 3</div><div class="texto">Encabezados presentes, después</div></div>
+  <div class="cifra"><div class="valor">2</div><div class="texto">Tipos de petición comparados (GET y POST)</div></div>
+  <div class="cifra"><div class="valor">0</div><div class="texto">Problemas de CORS encontrados</div></div>
+</div>
+
+<h2>Alcance y metodología</h2>
+
+<h3>Capacidades de la edición Community</h3>
+<p>Burp Community incluye el proxy de interceptación, el historial HTTP y las herramientas manuales. No incluye el escáner de vulnerabilidades. Por esta razón los hallazgos de este informe salen de la lectura de las respuestas HTTP. Ninguna alerta la genera la herramienta.</p>
+
+<h3>Entornos comparados</h3>
+<table>
+  <caption>Tabla 1. Entornos de prueba</caption>
+  <thead><tr><th>Versión</th><th>Código</th><th>Frontend</th><th>Backend</th></tr></thead>
+  <tbody>
+    <tr><td>Antes</td><td>Commit <code>af3b590</code></td><td><code>localhost:4322</code></td><td><code>localhost:8001</code></td></tr>
+    <tr><td>Después</td><td>Commit <code>6dc41ad</code></td><td><code>localhost:4323</code></td><td><code>localhost:8002</code></td></tr>
+  </tbody>
+</table>
+<p>El archivo <code>burp/compose.yml</code> define los cuatro servicios. Los backends usan una base de datos temporal en memoria (<code>tmpfs</code>). Los datos de desarrollo no se tocan.</p>
+
+<figure>
+  <svg viewBox="0 0 760 250" role="img" aria-labelledby="flujo-titulo" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+    <title id="flujo-titulo">Flujo del tráfico: navegador de Burp, proxy de Burp, frontend y backend de cada versión</title>
+    <defs>
+      <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4a5260"/>
+      </marker>
+    </defs>
+    <rect x="10" y="85" width="150" height="80" fill="#f3f5f8" stroke="#1f3a5f" stroke-width="1.5"/>
+    <text x="85" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#1f3a5f">Navegador</text>
+    <text x="85" y="138" text-anchor="middle" font-size="12" fill="#4a5260">integrado de Burp</text>
+
+    <rect x="215" y="85" width="140" height="80" fill="#f3f5f8" stroke="#1f3a5f" stroke-width="1.5"/>
+    <text x="285" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#1f3a5f">Proxy de Burp</text>
+    <text x="285" y="138" text-anchor="middle" font-size="12" fill="#4a5260">127.0.0.1:8080</text>
+
+    <rect x="410" y="20" width="160" height="70" fill="#fff" stroke="#4a5260" stroke-width="1.5"/>
+    <text x="490" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#1b1f27">Frontend antes</text>
+    <text x="490" y="68" text-anchor="middle" font-size="12" fill="#4a5260">localhost:4322</text>
+    <rect x="410" y="160" width="160" height="70" fill="#fff" stroke="#4a5260" stroke-width="1.5"/>
+    <text x="490" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#1b1f27">Frontend después</text>
+    <text x="490" y="208" text-anchor="middle" font-size="12" fill="#4a5260">localhost:4323</text>
+
+    <rect x="620" y="20" width="130" height="70" fill="#fff" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="685" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#1b1f27">Backend antes</text>
+    <text x="685" y="68" text-anchor="middle" font-size="12" fill="#4a5260">:8001</text>
+    <rect x="620" y="160" width="130" height="70" fill="#fff" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="685" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="#1b1f27">Backend después</text>
+    <text x="685" y="208" text-anchor="middle" font-size="12" fill="#4a5260">:8002</text>
+
+    <line x1="160" y1="125" x2="213" y2="125" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <line x1="355" y1="110" x2="408" y2="62" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <line x1="355" y1="140" x2="408" y2="190" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <line x1="570" y1="55" x2="618" y2="55" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#flecha)"/>
+    <line x1="570" y1="195" x2="618" y2="195" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#flecha)"/>
+    <text x="595" y="46" text-anchor="middle" font-size="10" fill="#4a5260">/api</text>
+    <text x="595" y="186" text-anchor="middle" font-size="10" fill="#4a5260">/api</text>
+  </svg>
+  <figcaption>Figura 1. Flujo del tráfico. Las líneas punteadas indican la conexión interna entre frontend y backend. Esa conexión no pasa por Burp.</figcaption>
+</figure>
+
+<div class="nota">
+  <p>El frontend reenvía las llamadas <code>/api/...</code> al backend desde el servidor de Astro. Burp no ve esa segunda conexión. Burp registra la respuesta final que recibe el navegador. El proxy del frontend copia los encabezados del backend, así que la respuesta final los contiene.</p>
+</div>
+
+<h3>Procedimiento</h3>
+<ol>
+  <li>Abrir el navegador integrado de Burp (<strong>Proxy → Open browser</strong>).</li>
+  <li>Abrir el frontend de la versión <strong>antes</strong> (<code>localhost:4322</code>). Crear un médico, un paciente y una cita. Listar médicos y pacientes.</li>
+  <li>Repetir el mismo flujo en el frontend de la versión <strong>después</strong> (<code>localhost:4323</code>).</li>
+  <li>Filtrar el historial HTTP por <code>/api</code>. Abrir cada petición y revisar la pestaña <strong>Response</strong>.</li>
+</ol>
+<pre><code>git archive af3b590:backend | docker build --target production -t clinica-backend:antes -
+docker compose -f burp/compose.yml up -d --build
+docker compose -f burp/compose.yml down -v</code></pre>
+
+<h2>Resultados</h2>
+
+<h3>Historial de peticiones</h3>
+<p>El historial contiene las peticiones de ambas versiones. La columna <strong>Host</strong> distingue la versión. Los hosts con el puerto 4322 son la versión antes. Los hosts con el puerto 4323 son la versión después.</p>
+<figure>
+  <img src="evidencia/historial.png" alt="Historial HTTP de Burp con peticiones a localhost:4322 y localhost:4323, filtradas por /api.">
+  <figcaption>Figura 2. Historial HTTP de Burp, filtrado por <code>/api</code>.</figcaption>
+</figure>
+
+<h3>Comparación de encabezados de respuesta</h3>
+<table>
+  <caption>Tabla 2. Encabezados de seguridad en las respuestas capturadas</caption>
+  <thead>
+    <tr><th>ID</th><th>Encabezado</th><th>Antes (4322)</th><th>Después (4323)</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>H-01</td><td><code>X-Content-Type-Options</code></td><td><span class="estado ausente">Ausente</span></td><td><code>nosniff</code></td><td><span class="estado resuelto">Resuelto</span></td></tr>
+    <tr><td>H-02</td><td><code>Cross-Origin-Resource-Policy</code></td><td><span class="estado ausente">Ausente</span></td><td><code>same-origin</code></td><td><span class="estado resuelto">Resuelto</span></td></tr>
+    <tr><td>H-03</td><td><code>Cache-Control</code></td><td><span class="estado ausente">Ausente</span></td><td><code>no-store</code></td><td><span class="estado resuelto">Resuelto</span></td></tr>
+  </tbody>
+</table>
+
+<table>
+  <caption>Tabla 3. Encabezados de respuesta por petición, según el panel Inspector de Burp</caption>
+  <thead>
+    <tr><th>Petición</th><th>Código</th><th class="num">Encabezados antes</th><th class="num">Encabezados después</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>GET /api/pacientes</code></td><td>200</td><td class="num">7</td><td class="num">10</td></tr>
+    <tr><td><code>POST /api/medicos</code></td><td>201</td><td class="num">8</td><td class="num">11</td></tr>
+  </tbody>
+</table>
+<p>La diferencia es de tres encabezados en cada petición. Son los tres encabezados de seguridad.</p>
+
+<h3>Evidencia de la lectura de pacientes</h3>
+<figure>
+  <img src="evidencia/antes-pacientes.png" alt="Burp, respuesta de GET /api/pacientes en localhost:4322 con siete encabezados y sin encabezados de seguridad.">
+  <figcaption>Figura 3. <code>GET /api/pacientes</code> en la versión antes. La respuesta no incluye los tres encabezados.</figcaption>
+</figure>
+<figure>
+  <img src="evidencia/despues-pacientes.png" alt="Burp, respuesta de GET /api/pacientes en localhost:4323 con diez encabezados, incluidos cache-control, cross-origin-resource-policy y x-content-type-options.">
+  <figcaption>Figura 4. <code>GET /api/pacientes</code> en la versión después. La respuesta incluye <code>cache-control: no-store</code>, <code>cross-origin-resource-policy: same-origin</code> y <code>x-content-type-options: nosniff</code>.</figcaption>
+</figure>
+
+<h3>Evidencia de la creación de médicos</h3>
+<figure>
+  <img src="evidencia/antes-medicos-post.png" alt="Burp, respuesta 201 de POST /api/medicos en localhost:4322 sin encabezados de seguridad.">
+  <figcaption>Figura 5. <code>POST /api/medicos</code> en la versión antes. Respuesta 201 sin los tres encabezados.</figcaption>
+</figure>
+<figure>
+  <img src="evidencia/despues-medicos-post.png" alt="Burp, respuesta 201 de POST /api/medicos en localhost:4323 con los tres encabezados de seguridad.">
+  <figcaption>Figura 6. <code>POST /api/medicos</code> en la versión después. Respuesta 201 con los tres encabezados.</figcaption>
+</figure>
+
+<h2>Observaciones adicionales</h2>
+<p>Estas observaciones no son hallazgos corregidos. Se documentan para completar el análisis.</p>
+
+<table>
+  <caption>Tabla 4. Observaciones sin corrección</caption>
+  <thead><tr><th>ID</th><th>Observación</th><th>Riesgo</th><th>Evidencia</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>O-01</td>
+      <td>Ambas versiones envían el encabezado <code>server: uvicorn</code>. Revela el servidor de aplicación. No revela la versión.</td>
+      <td><span class="riesgo info">Informativo</span></td>
+      <td>Figuras 3 a 6</td>
+    </tr>
+    <tr>
+      <td>O-02</td>
+      <td>Las respuestas del frontend incluyen <code>Access-Control-Allow-Origin</code> con el origen de la petición. Las pruebas con <code>curl</code> muestran que el backend no envía este encabezado. El frontend lo envía solo si el origen es su propio <code>localhost</code>. Con el origen <code>http://evil.example</code> no lo envía. No hay un problema de CORS explotable.</td>
+      <td><span class="riesgo info">Informativo</span></td>
+      <td>Figuras 5 y 6, y pruebas con <code>curl</code></td>
+    </tr>
+    <tr>
+      <td>O-03</td>
+      <td>La página <code>/</code> del frontend no envía los encabezados de seguridad. Una consulta con <code>curl</code> a los puertos 4322 y 4323 no mostró <code>X-Content-Type-Options</code>, <code>Cross-Origin-Resource-Policy</code> ni <code>Cache-Control</code>. Esta observación corresponde al servidor de desarrollo de Astro. Un build de producción puede comportarse distinto.</td>
+      <td><span class="riesgo bajo">Bajo</span></td>
+      <td>Consulta con <code>curl</code>. No hay captura de Burp.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Limitaciones del análisis</h2>
+<ul>
+  <li>Burp Community no incluye escáner. Este informe no busca vulnerabilidades de forma automática.</li>
+  <li>El análisis cubre el flujo normal de la interfaz web. No incluye pruebas con Repeater ni con Intruder.</li>
+  <li>La comparación confirma los hallazgos H-01, H-02 y H-03. No amplía la lista de vulnerabilidades de ZAP.</li>
+  <li>El tráfico usa HTTP en <code>localhost</code>. Las reglas de TLS no aplican.</li>
+  <li>La API no tiene autenticación. Burp lo muestra, porque las peticiones <code>POST</code> no llevan credenciales y reciben respuestas 201. Este punto ya aparece en las limitaciones del informe de ZAP.</li>
+</ul>
+
+<h2>Relación con el informe de ZAP</h2>
+<table>
+  <caption>Tabla 5. Correspondencia entre las dos herramientas</caption>
+  <thead><tr><th>ID</th><th>Hallazgo</th><th>ZAP</th><th>Burp</th></tr></thead>
+  <tbody>
+    <tr><td>H-01</td><td>X-Content-Type-Options ausente</td><td>Alerta 10021 antes. Sin alerta después.</td><td>Ausente antes. <code>nosniff</code> después.</td></tr>
+    <tr><td>H-02</td><td>Cross-Origin-Resource-Policy ausente</td><td>Alerta 90004 antes. Sin alerta después.</td><td>Ausente antes. <code>same-origin</code> después.</td></tr>
+    <tr><td>H-03</td><td>Contenido almacenable en caché</td><td>Alerta 10049 antes. Sin alerta después.</td><td>Ausente antes. <code>no-store</code> después.</td></tr>
+  </tbody>
+</table>
+<p>Las dos herramientas coinciden. ZAP detecta los hallazgos de forma automática. Burp muestra el mismo comportamiento en las respuestas reales que recibe el navegador.</p>
+
+<footer>
+  Sistema de gestión de citas médicas · Informe de análisis de tráfico con Burp Suite · 2 de noviembre de 2026
+</footer>
+
+</main>
+</body>
+</html>
