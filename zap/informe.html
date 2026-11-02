@@ -28,12 +28,7 @@
   main { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
 
   header.portada { border-bottom: 3px solid var(--acento); padding-bottom: 24px; margin-bottom: 32px; }
-  header.portada .etiqueta {
-    font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--tinta-suave); margin: 0 0 8px;
-  }
-  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; color: var(--acento); }
-  header.portada p.sub { margin: 0; color: var(--tinta-suave); font-size: 1.05rem; }
+  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0; color: var(--acento); }
 
   h2 {
     counter-increment: seccion; counter-reset: sub;
@@ -48,6 +43,7 @@
   li { margin-bottom: 4px; }
   code, pre, kbd { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.86em; }
   code { background: var(--fondo-suave); padding: 1px 5px; border-radius: 2px; }
+  td code { white-space: nowrap; }
   pre {
     background: #1d232d; color: #e6e9ee; padding: 14px 16px; overflow-x: auto;
     border-radius: 3px; line-height: 1.45; margin: 0 0 16px;
@@ -79,10 +75,8 @@
   .estado.resuelto { color: var(--ok); }
   .estado.aceptado { color: var(--info); }
 
-  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0 24px; }
-  .cifra { border: 1px solid var(--linea); border-top: 3px solid var(--acento); padding: 12px 14px; background: var(--fondo-suave); }
-  .cifra .valor { font-family: Arial, Helvetica, sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--acento); }
-  .cifra .texto { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; color: var(--tinta-suave); }
+  .cifras { margin: 8px 0 24px; }
+  .cifras strong { color: var(--acento); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   figure { margin: 18px 0 24px; }
   figure img { display: block; width: 100%; height: auto; border: 1px solid var(--linea); }
@@ -103,7 +97,6 @@
   footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--tinta-suave); font-family: Arial, Helvetica, sans-serif; }
 
   @media (max-width: 720px) {
-    .cifras { grid-template-columns: repeat(2, 1fr); }
     .par { grid-template-columns: 1fr; }
     main { padding: 28px 18px 56px; }
   }
@@ -118,9 +111,7 @@
 <main>
 
 <header class="portada">
-  <p class="etiqueta">Informe técnico de seguridad</p>
   <h1>Análisis dinámico con OWASP ZAP del Sistema de gestión de citas médicas</h1>
-  <p class="sub">Hallazgos, correcciones y evidencia de resolución</p>
 </header>
 
 <table>
@@ -140,12 +131,12 @@
 <p>El análisis inicial encontró 5 tipos de alerta. Dos tenían riesgo bajo y tres eran informativas. No hubo alertas de riesgo medio ni alto. Las inyecciones SQL y el XSS no produjeron hallazgos.</p>
 <p>Una sola corrección resolvió los tres hallazgos accionables. La corrección agrega tres encabezados de seguridad a todas las respuestas HTTP. El análisis posterior no muestra alertas de riesgo bajo. Quedan 2 alertas informativas. Ambas describen el comportamiento correcto de la API y se aceptan con justificación.</p>
 
-<div class="cifras">
-  <div class="cifra"><div class="valor">2 → 0</div><div class="texto">Alertas de riesgo bajo</div></div>
-  <div class="cifra"><div class="valor">3 → 2</div><div class="texto">Alertas informativas</div></div>
-  <div class="cifra"><div class="valor">118 → 120</div><div class="texto">Reglas superadas</div></div>
-  <div class="cifra"><div class="valor">0</div><div class="texto">Alertas de riesgo medio o alto</div></div>
-</div>
+<ul class="cifras">
+  <li><strong>2 → 0</strong> alertas de riesgo bajo.</li>
+  <li><strong>3 → 2</strong> alertas informativas.</li>
+  <li><strong>118 → 120</strong> reglas superadas.</li>
+  <li><strong>0</strong> alertas de riesgo medio o alto.</li>
+</ul>
 
 <figure>
   <svg viewBox="0 0 760 300" role="img" aria-labelledby="grafico-titulo grafico-desc" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
@@ -192,6 +183,7 @@
 <h3>Niveles de análisis</h3>
 <table>
   <caption>Tabla 1. Niveles de análisis ejecutados</caption>
+  <colgroup><col style="width: 10%"><col style="width: 30%"><col style="width: 60%"></colgroup>
   <thead><tr><th>Nivel</th><th>Comando</th><th>Descripción</th></tr></thead>
   <tbody>
     <tr><td>Pasivo</td><td><code>zap-api-scan.py -S</code></td><td>Envía las peticiones definidas en OpenAPI y analiza las respuestas. No ejecuta ataques.</td></tr>
