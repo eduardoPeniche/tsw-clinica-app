@@ -64,6 +64,47 @@ Dentro de Docker, ambas variables apuntan automáticamente al servicio `backend`
 El archivo generado se versiona y se regenera cuando cambian los esquemas de
 FastAPI.
 
+## Análisis de seguridad
+
+Los informes están en [`zap/informe.html`](zap/informe.html) y
+[`burp/informe.html`](burp/informe.html). Los reportes crudos y las capturas
+están en `zap/reportes/`, `zap/evidencia/` y `burp/evidencia/`.
+
+### OWASP ZAP
+
+`zap/compose.yml` levanta un backend de producción con base de datos temporal
+y ejecuta ZAP contra su definición OpenAPI. No toca los datos de desarrollo.
+
+```bash
+mkdir -p zap/reportes/antes
+FASE=antes docker compose -f zap/compose.yml --profile scan run --rm zap-pasivo
+FASE=antes docker compose -f zap/compose.yml --profile scan run --rm zap-activo
+docker compose -f zap/compose.yml down -v
+```
+
+La variable `FASE` define la carpeta de salida (`antes` o `despues`). Cada
+ejecución genera un reporte en HTML, JSON y Markdown.
+
+### Burp Suite
+
+`burp/compose.yml` levanta dos versiones del sistema para comparar sus
+respuestas HTTP. La versión `antes` usa el commit `af3b590`, anterior a la
+corrección de encabezados. Construye su imagen una vez:
+
+```bash
+git archive af3b590:backend | docker build --target production -t clinica-backend:antes -
+docker compose -f burp/compose.yml up -d --build
+docker compose -f burp/compose.yml down -v
+```
+
+| Versión | Frontend | Backend |
+|---|---|---|
+| `antes` | `http://localhost:4322` | `http://localhost:8001` |
+| `despues` | `http://localhost:4323` | `http://localhost:8002` |
+
+Abre el navegador integrado de Burp Suite (Proxy → Open browser) y usa ambos
+frontends. Burp se ejecuta fuera de Docker.
+
 ## MCP por stdio
 
 El adaptador MCP es opcional: no inicia con `docker compose up` ni publica un
