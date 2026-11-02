@@ -37,3 +37,6 @@ dist/
 
 # Herramientas locales de agentes
 .agents/
+
+# E2E (Playwright)
+e2e/test-results/
