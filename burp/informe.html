@@ -28,12 +28,7 @@
   main { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
 
   header.portada { border-bottom: 3px solid var(--acento); padding-bottom: 24px; margin-bottom: 32px; }
-  header.portada .etiqueta {
-    font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--tinta-suave); margin: 0 0 8px;
-  }
-  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; color: var(--acento); }
-  header.portada p.sub { margin: 0; color: var(--tinta-suave); font-size: 1.05rem; }
+  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0; color: var(--acento); }
 
   h2 {
     counter-increment: seccion;
@@ -47,6 +42,7 @@
   li { margin-bottom: 4px; }
   code, pre { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.86em; }
   code { background: var(--fondo-suave); padding: 1px 5px; border-radius: 2px; }
+  td code { white-space: nowrap; }
   pre {
     background: #1d232d; color: #e6e9ee; padding: 14px 16px; overflow-x: auto;
     border-radius: 3px; line-height: 1.45; margin: 0 0 16px;
@@ -77,10 +73,8 @@
   .estado.resuelto { color: var(--ok); }
   .estado.ausente { color: var(--bajo); }
 
-  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0 24px; }
-  .cifra { border: 1px solid var(--linea); border-top: 3px solid var(--acento); padding: 12px 14px; background: var(--fondo-suave); }
-  .cifra .valor { font-family: Arial, Helvetica, sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--acento); }
-  .cifra .texto { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; color: var(--tinta-suave); }
+  .cifras { margin: 8px 0 24px; }
+  .cifras strong { color: var(--acento); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   figure { margin: 18px 0 24px; }
   figure img { display: block; width: 100%; height: auto; border: 1px solid var(--linea); }
@@ -91,7 +85,6 @@
   footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--tinta-suave); font-family: Arial, Helvetica, sans-serif; }
 
   @media (max-width: 720px) {
-    .cifras { grid-template-columns: repeat(2, 1fr); }
     main { padding: 28px 18px 56px; }
   }
   @media print {
@@ -105,9 +98,7 @@
 <main>
 
 <header class="portada">
-  <p class="etiqueta">Informe técnico de seguridad</p>
   <h1>Análisis de tráfico con Burp Suite del Sistema de gestión de citas médicas</h1>
-  <p class="sub">Comparación de las respuestas HTTP antes y después de las correcciones</p>
 </header>
 
 <table>
@@ -127,12 +118,12 @@
 <p>La versión <strong>antes</strong> usa el commit <code>af3b590</code>, anterior a la corrección. La versión <strong>después</strong> usa el código de <code>main</code> en el commit <code>6dc41ad</code>. En ambas versiones se ejecutó el mismo flujo desde la interfaz web. Burp registró las peticiones y las respuestas.</p>
 <p>La versión anterior no envía ninguno de los tres encabezados de seguridad. La versión posterior envía los tres, en las respuestas de lectura y de escritura. Burp confirma la resolución de H-01, H-02 y H-03 con una herramienta distinta a ZAP.</p>
 
-<div class="cifras">
-  <div class="cifra"><div class="valor">0 de 3</div><div class="texto">Encabezados presentes, antes</div></div>
-  <div class="cifra"><div class="valor">3 de 3</div><div class="texto">Encabezados presentes, después</div></div>
-  <div class="cifra"><div class="valor">2</div><div class="texto">Tipos de petición comparados (GET y POST)</div></div>
-  <div class="cifra"><div class="valor">0</div><div class="texto">Problemas de CORS encontrados</div></div>
-</div>
+<ul class="cifras">
+  <li><strong>0 de 3</strong> encabezados de seguridad presentes en la versión antes.</li>
+  <li><strong>3 de 3</strong> encabezados de seguridad presentes en la versión después.</li>
+  <li><strong>2</strong> tipos de petición comparados (GET y POST).</li>
+  <li><strong>0</strong> problemas de CORS encontrados.</li>
+</ul>
 
 <h2>Alcance y metodología</h2>
 
@@ -265,6 +256,7 @@ docker compose -f burp/compose.yml down -v</code></pre>
 
 <table>
   <caption>Tabla 4. Observaciones sin corrección</caption>
+  <colgroup><col style="width: 8%"><col style="width: 50%"><col style="width: 14%"><col style="width: 28%"></colgroup>
   <thead><tr><th>ID</th><th>Observación</th><th>Riesgo</th><th>Evidencia</th></tr></thead>
   <tbody>
     <tr>
