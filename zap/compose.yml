@@ -1,0 +1,44 @@
+x-zap: &zap
+  image: ghcr.io/zaproxy/zaproxy:stable
+  profiles: ["scan"]
+  depends_on:
+    backend:
+      condition: service_healthy
+  volumes:
+    - ./reportes/${FASE:-antes}:/zap/wrk:rw
+
+services:
+
+  backend:
+    build:
+      context: ../backend
+      target: production
+    environment:
+      DATABASE_PATH: /data/clinica.db
+      CLINIC_TIME_ZONE: America/Merida
+      APPOINTMENT_WEEKDAYS: "0,1,2,3,4"
+      APPOINTMENT_OPENING_TIME: "09:00"
+      APPOINTMENT_CLOSING_TIME: "17:00"
+      APPOINTMENT_DURATION_MINUTES: "30"
+    tmpfs:
+      - /data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json')
+      interval: 2s
+      retries: 30
+
+  zap-pasivo:
+    <<: *zap
+    command: >
+      zap-api-scan.py -t http://backend:8000/openapi.json -f openapi -S -I
+      -r pasivo.html -J pasivo.json -w pasivo.md
+
+  zap-activo:
+    <<: *zap
+    command: >
+      zap-api-scan.py -t http://backend:8000/openapi.json -f openapi -I
+      -r activo.html -J activo.json -w activo.md
