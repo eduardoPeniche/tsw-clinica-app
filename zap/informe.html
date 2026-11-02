@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Informe de análisis de seguridad con OWASP ZAP — Sistema de gestión de citas médicas</title>
+<style>
+  :root {
+    --tinta: #1b1f27;
+    --tinta-suave: #4a5260;
+    --acento: #1f3a5f;
+    --linea: #c9cfd8;
+    --fondo-suave: #f3f5f8;
+    --bajo: #8a5a00;
+    --info: #3d5a80;
+    --ok: #2e6b3f;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 16px; }
+  body {
+    margin: 0;
+    color: var(--tinta);
+    background: #fff;
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    line-height: 1.55;
+    counter-reset: seccion;
+  }
+  main { max-width: 960px; margin: 0 auto; padding: 48px 32px 80px; }
+
+  header.portada { border-bottom: 3px solid var(--acento); padding-bottom: 24px; margin-bottom: 32px; }
+  header.portada .etiqueta {
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--tinta-suave); margin: 0 0 8px;
+  }
+  header.portada h1 { font-size: 1.9rem; line-height: 1.25; margin: 0 0 6px; color: var(--acento); }
+  header.portada p.sub { margin: 0; color: var(--tinta-suave); font-size: 1.05rem; }
+
+  h2 {
+    counter-increment: seccion; counter-reset: sub;
+    font-size: 1.35rem; color: var(--acento); margin: 48px 0 12px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--linea);
+  }
+  h2::before { content: counter(seccion) ". "; }
+  h3 { counter-increment: sub; font-size: 1.08rem; margin: 28px 0 8px; color: var(--tinta); }
+  h3.hallazgo::before { content: none; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  code, pre, kbd { font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.86em; }
+  code { background: var(--fondo-suave); padding: 1px 5px; border-radius: 2px; }
+  pre {
+    background: #1d232d; color: #e6e9ee; padding: 14px 16px; overflow-x: auto;
+    border-radius: 3px; line-height: 1.45; margin: 0 0 16px;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  a { color: var(--acento); }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 8px 0 18px;
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.86rem;
+  }
+  caption {
+    caption-side: top; text-align: left; font-weight: 700; padding: 0 0 6px;
+    color: var(--tinta-suave); font-size: 0.82rem; letter-spacing: 0.02em;
+  }
+  th, td { border: 1px solid var(--linea); padding: 7px 10px; text-align: left; vertical-align: top; }
+  thead th { background: var(--acento); color: #fff; font-weight: 600; }
+  tbody th { background: var(--fondo-suave); font-weight: 600; width: 28%; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td, tr.total th { font-weight: 700; background: var(--fondo-suave); }
+
+  .riesgo {
+    display: inline-block; font-family: Arial, Helvetica, sans-serif; font-size: 0.74rem;
+    font-weight: 700; padding: 1px 7px; border: 1px solid; border-radius: 2px; white-space: nowrap;
+  }
+  .riesgo.bajo { color: var(--bajo); border-color: var(--bajo); }
+  .riesgo.info { color: var(--info); border-color: var(--info); }
+  .estado { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+  .estado.resuelto { color: var(--ok); }
+  .estado.aceptado { color: var(--info); }
+
+  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0 24px; }
+  .cifra { border: 1px solid var(--linea); border-top: 3px solid var(--acento); padding: 12px 14px; background: var(--fondo-suave); }
+  .cifra .valor { font-family: Arial, Helvetica, sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--acento); }
+  .cifra .texto { font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; color: var(--tinta-suave); }
+
+  figure { margin: 18px 0 24px; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--linea); }
+  figure svg { display: block; width: 100%; height: auto; border: 1px solid var(--linea); background: #fff; }
+  figcaption {
+    font-family: Arial, Helvetica, sans-serif; font-size: 0.8rem; color: var(--tinta-suave);
+    margin-top: 6px;
+  }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .par figure { margin: 8px 0 12px; }
+
+  .nota {
+    border-left: 4px solid var(--acento); background: var(--fondo-suave);
+    padding: 10px 14px; margin: 14px 0 18px; font-size: 0.96rem;
+  }
+  .ficha { margin-bottom: 8px; }
+
+  footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--linea); font-size: 0.82rem; color: var(--tinta-suave); font-family: Arial, Helvetica, sans-serif; }
+
+  @media (max-width: 720px) {
+    .cifras { grid-template-columns: repeat(2, 1fr); }
+    .par { grid-template-columns: 1fr; }
+    main { padding: 28px 18px 56px; }
+  }
+  @media print {
+    main { max-width: none; padding: 0; }
+    h2, h3, figure, table, pre { break-inside: avoid; }
+    pre { background: #fff; color: #000; border: 1px solid var(--linea); }
+  }
+</style>
+</head>
+<body>
+<main>
+
+<header class="portada">
+  <p class="etiqueta">Informe técnico de seguridad</p>
+  <h1>Análisis dinámico con OWASP ZAP del Sistema de gestión de citas médicas</h1>
+  <p class="sub">Hallazgos, correcciones y evidencia de resolución</p>
+</header>
+
+<table>
+  <caption>Datos del documento</caption>
+  <tbody>
+    <tr><th scope="row">Autores</th><td>Eduardo Peniche, Gianina Casanova, Cesar Morales</td></tr>
+    <tr><th scope="row">Fecha del informe</th><td>1 de noviembre de 2026</td></tr>
+    <tr><th scope="row">Objeto analizado</th><td>API HTTP del backend (FastAPI), imagen de Docker con destino <code>production</code></td></tr>
+    <tr><th scope="row">Herramienta</th><td>OWASP ZAP 2.17.0, imagen <code>ghcr.io/zaproxy/zaproxy:stable</code></td></tr>
+    <tr><th scope="row">Método</th><td>Análisis dinámico de la API a partir de su definición OpenAPI</td></tr>
+    <tr><th scope="row">Repositorio</th><td>Rama <code>main</code>, commits <code>fac0292</code> a <code>2f4af8e</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Resumen ejecutivo</h2>
+<p>Este informe documenta el análisis de seguridad de la API del sistema de citas médicas con OWASP ZAP. El análisis se ejecutó antes y después de las correcciones. Cada ejecución incluyó un nivel pasivo y un nivel activo.</p>
+<p>El análisis inicial encontró 5 tipos de alerta. Dos tenían riesgo bajo y tres eran informativas. No hubo alertas de riesgo medio ni alto. Las inyecciones SQL y el XSS no produjeron hallazgos.</p>
+<p>Una sola corrección resolvió los tres hallazgos accionables. La corrección agrega tres encabezados de seguridad a todas las respuestas HTTP. El análisis posterior no muestra alertas de riesgo bajo. Quedan 2 alertas informativas. Ambas describen el comportamiento correcto de la API y se aceptan con justificación.</p>
+
+<div class="cifras">
+  <div class="cifra"><div class="valor">2 → 0</div><div class="texto">Alertas de riesgo bajo</div></div>
+  <div class="cifra"><div class="valor">3 → 2</div><div class="texto">Alertas informativas</div></div>
+  <div class="cifra"><div class="valor">118 → 120</div><div class="texto">Reglas superadas</div></div>
+  <div class="cifra"><div class="valor">0</div><div class="texto">Alertas de riesgo medio o alto</div></div>
+</div>
+
+<figure>
+  <svg viewBox="0 0 760 300" role="img" aria-labelledby="grafico-titulo grafico-desc" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+    <title id="grafico-titulo">Tipos de alerta por nivel de riesgo, antes y después de las correcciones</title>
+    <desc id="grafico-desc">Antes: alto 0, medio 0, bajo 2, informativo 3. Después: alto 0, medio 0, bajo 0, informativo 2.</desc>
+    <g stroke="#c9cfd8" stroke-width="1">
+      <line x1="70" y1="240" x2="720" y2="240" stroke="#4a5260"/>
+      <line x1="70" y1="190" x2="720" y2="190"/>
+      <line x1="70" y1="140" x2="720" y2="140"/>
+      <line x1="70" y1="90" x2="720" y2="90"/>
+      <line x1="70" y1="40" x2="720" y2="40"/>
+    </g>
+    <g fill="#4a5260" font-size="12" text-anchor="end">
+      <text x="62" y="244">0</text><text x="62" y="194">1</text><text x="62" y="144">2</text><text x="62" y="94">3</text><text x="62" y="44">4</text>
+    </g>
+    <g fill="#1b1f27" font-size="13" text-anchor="middle">
+      <text x="153" y="264">Alto</text><text x="316" y="264">Medio</text><text x="478" y="264">Bajo</text><text x="641" y="264">Informativo</text>
+    </g>
+    <g>
+      <rect x="113" y="238" width="36" height="2" fill="#8a97aa"/><rect x="157" y="238" width="36" height="2" fill="#1f3a5f"/>
+      <rect x="276" y="238" width="36" height="2" fill="#8a97aa"/><rect x="320" y="238" width="36" height="2" fill="#1f3a5f"/>
+      <rect x="438" y="140" width="36" height="100" fill="#8a97aa"/><rect x="482" y="238" width="36" height="2" fill="#1f3a5f"/>
+      <rect x="601" y="90" width="36" height="150" fill="#8a97aa"/><rect x="645" y="140" width="36" height="100" fill="#1f3a5f"/>
+    </g>
+    <g fill="#1b1f27" font-size="12" font-weight="700" text-anchor="middle">
+      <text x="131" y="230">0</text><text x="175" y="230">0</text>
+      <text x="294" y="230">0</text><text x="338" y="230">0</text>
+      <text x="456" y="132">2</text><text x="500" y="230">0</text>
+      <text x="619" y="82">3</text><text x="663" y="132">2</text>
+    </g>
+    <g font-size="12" fill="#1b1f27">
+      <rect x="520" y="12" width="12" height="12" fill="#8a97aa"/><text x="538" y="23">Antes</text>
+      <rect x="600" y="12" width="12" height="12" fill="#1f3a5f"/><text x="618" y="23">Después</text>
+    </g>
+  </svg>
+  <figcaption>Figura 1. Tipos de alerta por nivel de riesgo en el análisis activo, antes y después de las correcciones.</figcaption>
+</figure>
+
+<h2>Alcance y metodología</h2>
+
+<h3>Alcance</h3>
+<p>El análisis cubre la API del backend. ZAP importa la definición OpenAPI desde <code>/openapi.json</code> y prueba cada ruta definida. El frontend Astro queda fuera del alcance.</p>
+
+<h3>Niveles de análisis</h3>
+<table>
+  <caption>Tabla 1. Niveles de análisis ejecutados</caption>
+  <thead><tr><th>Nivel</th><th>Comando</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>Pasivo</td><td><code>zap-api-scan.py -S</code></td><td>Envía las peticiones definidas en OpenAPI y analiza las respuestas. No ejecuta ataques.</td></tr>
+    <tr><td>Activo</td><td><code>zap-api-scan.py</code></td><td>Hace lo mismo que el nivel pasivo. Además envía peticiones de ataque a cada ruta y parámetro, con la política de reglas por defecto de ZAP.</td></tr>
+  </tbody>
+</table>
+<p>Ambos niveles crean registros. El nivel activo también modifica y borra registros. Por esta razón no se ejecutan contra la base de datos de desarrollo.</p>
+
+<h3>Entorno de ejecución</h3>
+<p>El archivo <code>zap/compose.yml</code> define un entorno aislado. El backend usa la imagen de producción. Su base de datos SQLite vive en un sistema de archivos temporal (<code>tmpfs</code>). Docker borra esos datos al detener el contenedor. ZAP escribe sus reportes en <code>zap/reportes/&lt;fase&gt;/</code>.</p>
+
+<figure>
+  <svg viewBox="0 0 760 210" role="img" aria-labelledby="entorno-titulo" xmlns="http://www.w3.org/2000/svg" font-family="Arial, Helvetica, sans-serif">
+    <title id="entorno-titulo">Arquitectura del entorno de análisis: ZAP, backend y almacenamiento temporal</title>
+    <defs>
+      <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#4a5260"/>
+      </marker>
+    </defs>
+    <rect x="10" y="40" width="210" height="90" fill="#f3f5f8" stroke="#1f3a5f" stroke-width="1.5"/>
+    <text x="115" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#1f3a5f">Contenedor ZAP</text>
+    <text x="115" y="88" text-anchor="middle" font-size="12" fill="#1b1f27">zap-pasivo / zap-activo</text>
+    <text x="115" y="106" text-anchor="middle" font-size="12" fill="#4a5260">ZAP 2.17.0</text>
+
+    <rect x="300" y="40" width="210" height="90" fill="#f3f5f8" stroke="#1f3a5f" stroke-width="1.5"/>
+    <text x="405" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#1f3a5f">Contenedor backend</text>
+    <text x="405" y="88" text-anchor="middle" font-size="12" fill="#1b1f27">FastAPI, destino production</text>
+    <text x="405" y="106" text-anchor="middle" font-size="12" fill="#4a5260">http://backend:8000</text>
+
+    <rect x="590" y="40" width="160" height="90" fill="#fff" stroke="#4a5260" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="670" y="68" text-anchor="middle" font-size="13" font-weight="700" fill="#1b1f27">tmpfs /data</text>
+    <text x="670" y="88" text-anchor="middle" font-size="12" fill="#1b1f27">SQLite temporal</text>
+    <text x="670" y="106" text-anchor="middle" font-size="12" fill="#4a5260">se borra al detener</text>
+
+    <line x1="220" y1="85" x2="298" y2="85" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <text x="259" y="76" text-anchor="middle" font-size="11" fill="#4a5260">HTTP</text>
+    <line x1="510" y1="85" x2="588" y2="85" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <text x="549" y="76" text-anchor="middle" font-size="11" fill="#4a5260">SQL</text>
+
+    <rect x="10" y="160" width="210" height="40" fill="#fff" stroke="#4a5260" stroke-width="1.5"/>
+    <text x="115" y="178" text-anchor="middle" font-size="12" font-weight="700" fill="#1b1f27">Equipo anfitrión</text>
+    <text x="115" y="193" text-anchor="middle" font-size="11" fill="#4a5260">zap/reportes/&lt;fase&gt;/</text>
+    <line x1="115" y1="130" x2="115" y2="158" stroke="#4a5260" stroke-width="1.5" marker-end="url(#flecha)"/>
+    <text x="123" y="148" font-size="11" fill="#4a5260">volumen montado</text>
+  </svg>
+  <figcaption>Figura 2. Componentes del entorno de análisis y sus conexiones.</figcaption>
+</figure>
+
+<h3>Ejecución</h3>
+<pre><code>mkdir -p zap/reportes/antes
+FASE=antes docker compose -f zap/compose.yml --profile scan run --rm zap-pasivo
+FASE=antes docker compose -f zap/compose.yml --profile scan run --rm zap-activo
+docker compose -f zap/compose.yml down -v</code></pre>
+<p>La variable <code>FASE</code> toma el valor <code>antes</code> o <code>despues</code>. Define la carpeta de salida. Cada ejecución produce un reporte en HTML, JSON y Markdown.</p>
+
+<h2>Resultados previos a las correcciones</h2>
+<p>El análisis activo inicial generó 73 instancias en 5 tipos de alerta. El análisis pasivo produjo los mismos 5 tipos con menos instancias de error 4xx.</p>
+
+<table>
+  <caption>Tabla 2. Hallazgos del análisis inicial (análisis activo)</caption>
+  <thead>
+    <tr><th>ID</th><th>Alerta</th><th>Regla</th><th>CWE</th><th>Riesgo</th><th class="num">Instancias</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>H-01</td><td>X-Content-Type-Options Header Missing</td><td>10021</td><td>693</td><td><span class="riesgo bajo">Bajo</span></td><td class="num">5</td></tr>
+    <tr><td>H-02</td><td>Cross-Origin-Resource-Policy Header Missing or Invalid</td><td>90004</td><td>693</td><td><span class="riesgo bajo">Bajo</span></td><td class="num">5</td></tr>
+    <tr><td>H-03</td><td>Storable and Cacheable Content</td><td>10049</td><td>524</td><td><span class="riesgo info">Informativo</span></td><td class="num">3</td></tr>
+    <tr><td>H-04</td><td>Non-Storable Content</td><td>10049</td><td>524</td><td><span class="riesgo info">Informativo</span></td><td class="num">5</td></tr>
+    <tr><td>H-05</td><td>A Client Error response code was returned by the server</td><td>100000</td><td>388</td><td><span class="riesgo info">Informativo</span></td><td class="num">55</td></tr>
+    <tr class="total"><td colspan="5">Total de instancias</td><td class="num">73</td></tr>
+  </tbody>
+</table>
+
+<figure>
+  <img src="evidencia/antes-activo-resumen.png" alt="Reporte de ZAP antes de las correcciones. Resumen de alertas con 0 altas, 0 medias, 2 bajas y 3 informativas.">
+  <figcaption>Figura 3. Resumen de alertas del análisis activo antes de las correcciones. Fuente: <code>reportes/antes/activo.html</code>.</figcaption>
+</figure>
+
+<h2>Hallazgos y correcciones</h2>
+
+<h3 class="hallazgo">H-01. Encabezado X-Content-Type-Options ausente</h3>
+<table class="ficha">
+  <tbody>
+    <tr><th scope="row">Riesgo</th><td><span class="riesgo bajo">Bajo</span> · CWE-693 · WASC-15</td></tr>
+    <tr><th scope="row">Rutas afectadas</th><td><code>GET /medicos</code>, <code>POST /medicos</code>, <code>GET /pacientes</code>, <code>POST /pacientes</code>, <code>GET /openapi.json</code></td></tr>
+    <tr><th scope="row">Estado</th><td><span class="estado resuelto">Resuelto</span></td></tr>
+  </tbody>
+</table>
+<p><strong>Descripción.</strong> La API no envía el encabezado <code>X-Content-Type-Options: nosniff</code>. Un navegador antiguo puede interpretar el cuerpo de una respuesta con un tipo distinto al declarado.</p>
+<p><strong>Corrección.</strong> Un middleware agrega <code>X-Content-Type-Options: nosniff</code> a todas las respuestas.</p>
+
+<h3 class="hallazgo">H-02. Encabezado Cross-Origin-Resource-Policy ausente</h3>
+<table class="ficha">
+  <tbody>
+    <tr><th scope="row">Riesgo</th><td><span class="riesgo bajo">Bajo</span> · CWE-693 · WASC-14</td></tr>
+    <tr><th scope="row">Rutas afectadas</th><td>Las mismas cinco rutas de H-01</td></tr>
+    <tr><th scope="row">Estado</th><td><span class="estado resuelto">Resuelto</span></td></tr>
+  </tbody>
+</table>
+<p><strong>Descripción.</strong> La API no declara qué orígenes pueden cargar sus recursos. El encabezado <code>Cross-Origin-Resource-Policy</code> reduce el riesgo de ataques de canal lateral, como Spectre.</p>
+<p><strong>Corrección.</strong> El mismo middleware agrega <code>Cross-Origin-Resource-Policy: same-origin</code>. El frontend consume la API por su propio origen, mediante el proxy <code>/api</code>. El valor <code>same-origin</code> no afecta ese flujo.</p>
+
+<h3 class="hallazgo">H-03. Contenido almacenable en caché</h3>
+<table class="ficha">
+  <tbody>
+    <tr><th scope="row">Riesgo</th><td><span class="riesgo info">Informativo</span> · CWE-524 · WASC-13</td></tr>
+    <tr><th scope="row">Rutas afectadas</th><td><code>GET /medicos</code>, <code>GET /pacientes</code>, <code>GET /openapi.json</code></td></tr>
+    <tr><th scope="row">Estado</th><td><span class="estado resuelto">Resuelto</span></td></tr>
+  </tbody>
+</table>
+<p><strong>Descripción.</strong> Las respuestas de lectura no incluyen <code>Cache-Control</code>. Un proxy o un navegador puede guardarlas y entregarlas a otro usuario. Las respuestas de <code>/pacientes</code> contienen datos personales.</p>
+<p><strong>Corrección.</strong> El middleware agrega <code>Cache-Control: no-store</code> a todas las respuestas.</p>
+
+<h3 class="hallazgo">Implementación de H-01, H-02 y H-03</h3>
+<p>El módulo <code>backend/src/clinica_app/adapters/http/security_headers.py</code> contiene el middleware. <code>main.py</code> lo registra con <code>register_security_headers(app)</code>, igual que los manejadores de error.</p>
+<pre><code>SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cache-Control": "no-store",
+}
+
+def register_security_headers(app: FastAPI) -> None:
+    @app.middleware("http")
+    async def add_security_headers(request, call_next):
+        response = await call_next(request)
+        response.headers.update(SECURITY_HEADERS)
+        return response</code></pre>
+<p>La prueba <code>test_respuestas_incluyen_encabezados_de_seguridad</code> verifica los tres encabezados en una respuesta 200 y en una 404.</p>
+
+<h3 class="hallazgo">H-04. Contenido no almacenable en caché</h3>
+<table class="ficha">
+  <tbody>
+    <tr><th scope="row">Riesgo</th><td><span class="riesgo info">Informativo</span> · CWE-524 · WASC-13</td></tr>
+    <tr><th scope="row">Rutas afectadas</th><td>Antes: <code>DELETE</code> y <code>PUT</code> de <code>/pacientes/{id}</code>, <code>PUT</code> de <code>/medicos/{id}</code> y <code>GET</code> de ambos con identificador inválido (422). Después: <code>DELETE</code> y <code>PUT</code> de <code>/pacientes/{id}</code>, y <code>GET</code> de <code>/medicos</code>, <code>/pacientes</code> y <code>/pacientes/{id}</code> con <code>no-store</code></td></tr>
+    <tr><th scope="row">Estado</th><td><span class="estado aceptado">Aceptado</span></td></tr>
+  </tbody>
+</table>
+<p><strong>Descripción.</strong> ZAP informa que estas respuestas no se pueden guardar en caché. La regla es informativa. Sugiere cachear solo si la respuesta no contiene datos personales.</p>
+<p><strong>Decisión.</strong> No se corrige. Los métodos <code>PUT</code> y <code>DELETE</code> no son almacenables por definición. Las respuestas <code>GET</code> de pacientes y médicos contienen datos personales. La corrección de H-03 exige <code>no-store</code> en ellas. Quitar <code>no-store</code> reabriría H-03.</p>
+
+<h3 class="hallazgo">H-05. Respuestas de error del cliente</h3>
+<table class="ficha">
+  <tbody>
+    <tr><th scope="row">Riesgo</th><td><span class="riesgo info">Informativo</span> · CWE-388 · WASC-20</td></tr>
+    <tr><th scope="row">Rutas afectadas</th><td>55 instancias en 45 rutas distintas, con respuestas 404, 405 y 422</td></tr>
+    <tr><th scope="row">Estado</th><td><span class="estado aceptado">Aceptado</span></td></tr>
+  </tbody>
+</table>
+<p><strong>Descripción.</strong> Un script de ZAP genera una alerta por cada respuesta 4xx. La alerta sugiere que la aplicación puede manejar mal las entradas inesperadas.</p>
+<p><strong>Decisión.</strong> No se corrige. Las respuestas 422 rechazan identificadores y fechas con formato inválido. Las respuestas 404 y 405 responden a rutas y métodos que no existen. Este es el comportamiento esperado de la API. Para eliminar la alerta, la API tendría que aceptar entradas inválidas.</p>
+<p>El reporte también incluye un indicador (<em>insight</em>) con el 79 % de respuestas 4xx. Este valor refleja el método de prueba. El análisis activo envía muchas peticiones con datos de ataque. La API las rechaza. Por eso el indicador no cambia entre el análisis previo y el posterior.</p>
+
+<h2>Verificación posterior a las correcciones</h2>
+
+<h3>Comparación de resultados</h3>
+<table>
+  <caption>Tabla 3. Resultados del análisis activo antes y después de las correcciones</caption>
+  <thead>
+    <tr><th>ID</th><th>Alerta</th><th class="num">Antes</th><th class="num">Después</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>H-01</td><td>X-Content-Type-Options Header Missing</td><td class="num">5</td><td class="num">0</td><td><span class="estado resuelto">Resuelto</span></td></tr>
+    <tr><td>H-02</td><td>Cross-Origin-Resource-Policy Header Missing or Invalid</td><td class="num">5</td><td class="num">0</td><td><span class="estado resuelto">Resuelto</span></td></tr>
+    <tr><td>H-03</td><td>Storable and Cacheable Content</td><td class="num">3</td><td class="num">0</td><td><span class="estado resuelto">Resuelto</span></td></tr>
+    <tr><td>H-04</td><td>Non-Storable Content</td><td class="num">5</td><td class="num">5</td><td><span class="estado aceptado">Aceptado</span></td></tr>
+    <tr><td>H-05</td><td>A Client Error response code was returned by the server</td><td class="num">55</td><td class="num">55</td><td><span class="estado aceptado">Aceptado</span></td></tr>
+    <tr class="total"><td colspan="2">Total de instancias</td><td class="num">73</td><td class="num">60</td><td></td></tr>
+  </tbody>
+</table>
+<p>Los contadores de ZAP del análisis activo cambian de <code>WARN-NEW: 2, PASS: 118</code> a <code>WARN-NEW: 0, PASS: 120</code>. El análisis pasivo produce el mismo resultado final.</p>
+
+<div class="par">
+  <figure>
+    <img src="evidencia/antes-activo-resumen.png" alt="Resumen de alertas antes: 2 bajas y 3 informativas.">
+    <figcaption>Figura 4a. Resumen de alertas, antes.</figcaption>
+  </figure>
+  <figure>
+    <img src="evidencia/despues-activo-resumen.png" alt="Resumen de alertas después: 0 bajas y 2 informativas.">
+    <figcaption>Figura 4b. Resumen de alertas, después.</figcaption>
+  </figure>
+</div>
+
+<h3>Encabezados de respuesta</h3>
+<p>Una consulta directa al backend confirma los tres encabezados en una respuesta 200 y en una respuesta 404.</p>
+<pre><code>$ curl -s -D - -o /dev/null http://localhost:8000/pacientes
+HTTP/1.1 200 OK
+content-type: application/json
+x-content-type-options: nosniff
+cross-origin-resource-policy: same-origin
+cache-control: no-store
+
+$ curl -s -D - -o /dev/null http://localhost:8000/ruta-inexistente
+HTTP/1.1 404 Not Found
+content-type: application/json
+x-content-type-options: nosniff
+cross-origin-resource-policy: same-origin
+cache-control: no-store</code></pre>
+
+<h3>Controles que no produjeron hallazgos</h3>
+<p>Estas reglas activas se ejecutaron en ambos análisis y no generaron alertas.</p>
+<ul>
+  <li>Inyección SQL, con 6 variantes (genérica, MySQL, Hypersonic, Oracle, PostgreSQL y MsSQL).</li>
+  <li>Cross-site scripting reflejado, persistente y basado en DOM.</li>
+  <li>Path traversal e inclusión remota de archivos.</li>
+  <li>Inyección de comandos del sistema operativo y de código del servidor.</li>
+  <li>Divulgación de errores de aplicación y de metadatos en la nube.</li>
+  <li>Log4Shell, Spring4Shell y entidades XML externas.</li>
+</ul>
+
+<h2>Limitaciones del análisis</h2>
+<ul>
+  <li>El análisis cubre solo el backend. El frontend Astro no se analizó.</li>
+  <li>La API no tiene autenticación ni autorización. ZAP recibió respuestas 201 al crear pacientes y médicos sin credenciales. ZAP no emite una alerta para esta condición. Es una decisión de diseño del proyecto y un riesgo para un uso en producción.</li>
+  <li>El análisis usó HTTP dentro de la red de Docker. Las reglas de TLS, como HSTS, no se evaluaron.</li>
+  <li>El análisis activo usó la política por defecto de ZAP. No es una prueba de penetración manual.</li>
+  <li>Los resultados corresponden a ZAP 2.17.0 y a sus reglas en la fecha del análisis. Una versión nueva puede reportar alertas distintas.</li>
+</ul>
+
+<h2>Evidencia y trazabilidad</h2>
+
+<table>
+  <caption>Tabla 4. Archivos de evidencia (rutas relativas a la carpeta <code>zap/</code>)</caption>
+  <thead><tr><th>Etapa</th><th>Nivel</th><th>HTML</th><th>JSON</th><th>Markdown</th></tr></thead>
+  <tbody>
+    <tr><td>Antes</td><td>Pasivo</td><td><a href="reportes/antes/pasivo.html">pasivo.html</a></td><td><a href="reportes/antes/pasivo.json">pasivo.json</a></td><td><a href="reportes/antes/pasivo.md">pasivo.md</a></td></tr>
+    <tr><td>Antes</td><td>Activo</td><td><a href="reportes/antes/activo.html">activo.html</a></td><td><a href="reportes/antes/activo.json">activo.json</a></td><td><a href="reportes/antes/activo.md">activo.md</a></td></tr>
+    <tr><td>Después</td><td>Pasivo</td><td><a href="reportes/despues/pasivo.html">pasivo.html</a></td><td><a href="reportes/despues/pasivo.json">pasivo.json</a></td><td><a href="reportes/despues/pasivo.md">pasivo.md</a></td></tr>
+    <tr><td>Después</td><td>Activo</td><td><a href="reportes/despues/activo.html">activo.html</a></td><td><a href="reportes/despues/activo.json">activo.json</a></td><td><a href="reportes/despues/activo.md">activo.md</a></td></tr>
+  </tbody>
+</table>
+
+<table>
+  <caption>Tabla 5. Commits del proceso</caption>
+  <thead><tr><th>Commit</th><th>Mensaje</th><th>Contenido</th></tr></thead>
+  <tbody>
+    <tr><td><code>fac0292</code></td><td>chore: agregar compose de OWASP ZAP</td><td>Entorno de análisis (<code>zap/compose.yml</code>)</td></tr>
+    <tr><td><code>af3b590</code></td><td>docs: agregar reportes ZAP previos a las correcciones</td><td>Evidencia inicial</td></tr>
+    <tr><td><code>247f491</code></td><td>fix: agregar encabezados de seguridad a las respuestas HTTP</td><td>Corrección de H-01, H-02 y H-03, con su prueba</td></tr>
+    <tr><td><code>2f4af8e</code></td><td>docs: agregar reportes ZAP posteriores a las correcciones</td><td>Evidencia final</td></tr>
+  </tbody>
+</table>
+
+<h3>Anexo. Detalle de alertas en los reportes de ZAP</h3>
+<figure>
+  <img src="evidencia/antes-activo-detalle.png" alt="Detalle de alertas del reporte activo antes de las correcciones.">
+  <figcaption>Figura A1. Detalle de alertas del análisis activo antes de las correcciones.</figcaption>
+</figure>
+<figure>
+  <img src="evidencia/despues-activo-detalle.png" alt="Detalle de alertas del reporte activo después de las correcciones.">
+  <figcaption>Figura A2. Detalle de alertas del análisis activo después de las correcciones.</figcaption>
+</figure>
+
+<footer>
+  Sistema de gestión de citas médicas · Informe de análisis de seguridad con OWASP ZAP · 1 de noviembre de 2026
+</footer>
+
+</main>
+</body>
+</html>
