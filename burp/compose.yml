@@ -1,0 +1,46 @@
+x-backend: &backend
+  environment:
+    DATABASE_PATH: /data/clinica.db
+    CLINIC_TIME_ZONE: America/Merida
+    APPOINTMENT_WEEKDAYS: "0,1,2,3,4"
+    APPOINTMENT_OPENING_TIME: "09:00"
+    APPOINTMENT_CLOSING_TIME: "17:00"
+    APPOINTMENT_DURATION_MINUTES: "30"
+  tmpfs:
+    - /data
+
+services:
+
+  antes:
+    <<: *backend
+    image: clinica-backend:antes
+    ports:
+      - "8001:8000"
+
+  despues:
+    <<: *backend
+    build:
+      context: ../backend
+      target: production
+    ports:
+      - "8002:8000"
+
+  frontend-antes:
+    build:
+      context: ../frontend
+    ports:
+      - "4322:4321"
+    depends_on:
+      - antes
+    environment:
+      BACKEND_URL: http://antes:8000
+
+  frontend-despues:
+    build:
+      context: ../frontend
+    ports:
+      - "4323:4321"
+    depends_on:
+      - despues
+    environment:
+      BACKEND_URL: http://despues:8000
