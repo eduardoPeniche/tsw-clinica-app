@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import { PacientesView } from '../components/pacientes/pacientes-view';
+import { MedicosView } from '../components/medicos/medicos-view';
 ---
 
 <html lang="es">
@@ -7,6 +9,12 @@ import '../styles/global.css';
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width" />
 		<title>Clínica | Agenda</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+			rel="stylesheet"
+		/>
 	</head>
 	<body>
 		<main class="app-shell">
@@ -32,6 +40,14 @@ import '../styles/global.css';
 					</button>
 				</div>
 				<section id="calendario-view" class="app-view" aria-label="Calendario">
+					<div class="mb-5 px-[var(--content-inline)] pt-[var(--content-block)]">
+						<h1 class="text-foreground text-[1.65rem] leading-tight font-semibold tracking-tight sm:text-[2.1rem]">
+							Calendario
+						</h1>
+						<p class="text-muted-foreground mt-1.5 max-w-prose text-sm">
+							Consulta la disponibilidad y agenda citas para cada médico.
+						</p>
+					</div>
 					<div class="calendar-controls" aria-label="Controles del calendario">
 						<div class="doctor-select">
 							<select
@@ -101,42 +117,11 @@ import '../styles/global.css';
 				</section>
 
 				<section id="pacientes-view" class="app-view resource-view" aria-label="Pacientes" hidden>
-					<div class="table-wrap resource-table-wrap">
-						<table>
-							<thead>
-								<tr>
-									<th>Paciente</th>
-									<th>Nacimiento</th>
-									<th>Contacto</th>
-									<th>
-										<button id="nuevo-paciente" class="button button-small" type="button">
-											Agregar
-										</button>
-									</th>
-								</tr>
-							</thead>
-							<tbody id="pacientes-body"></tbody>
-						</table>
-					</div>
+					<PacientesView client:visible />
 				</section>
 
 				<section id="medicos-view" class="app-view resource-view" aria-label="Médicos" hidden>
-					<div class="table-wrap resource-table-wrap">
-						<table>
-							<thead>
-								<tr>
-									<th>Médico</th>
-									<th>Especialidad</th>
-									<th>
-										<button id="nuevo-medico" class="button button-small" type="button">
-											Agregar
-										</button>
-									</th>
-								</tr>
-							</thead>
-							<tbody id="medicos-body"></tbody>
-						</table>
-					</div>
+					<MedicosView client:visible />
 				</section>
 			</div>
 		</main>
@@ -165,64 +150,6 @@ import '../styles/global.css';
 					</button>
 					<button class="button" type="submit">
 						Agendar cita
-					</button>
-				</div>
-			</form>
-		</dialog>
-		<dialog id="paciente-dialog" class="appointment-dialog" aria-labelledby="paciente-dialog-title">
-			<form id="paciente-form" method="dialog" class="entity-dialog-form">
-				<div class="dialog-heading">
-					<h2 id="paciente-dialog-title">Paciente</h2>
-					<button id="cerrar-paciente" class="icon-button" type="button" aria-label="Cerrar">
-						×
-					</button>
-				</div>
-				<input name="id" type="hidden" />
-				<label>
-					Nombre completo
-					<input name="nombre" required />
-				</label>
-				<label>
-					Fecha de nacimiento
-					<input name="fecha_nacimiento" type="date" required />
-				</label>
-				<label>
-					Contacto
-					<input name="contacto" required />
-				</label>
-				<div class="dialog-actions">
-					<button id="cancelar-paciente-dialog" class="button button-secondary" type="button">
-						Cancelar
-					</button>
-					<button class="button" type="submit">
-						Guardar
-					</button>
-				</div>
-			</form>
-		</dialog>
-		<dialog id="medico-dialog" class="appointment-dialog" aria-labelledby="medico-dialog-title">
-			<form id="medico-form" method="dialog" class="entity-dialog-form">
-				<div class="dialog-heading">
-					<h2 id="medico-dialog-title">Médico</h2>
-					<button id="cerrar-medico" class="icon-button" type="button" aria-label="Cerrar">
-						×
-					</button>
-				</div>
-				<input name="id" type="hidden" />
-				<label>
-					Nombre completo
-					<input name="nombre" required />
-				</label>
-				<label>
-					Especialidad
-					<input name="especialidad" required />
-				</label>
-				<div class="dialog-actions">
-					<button id="cancelar-medico-dialog" class="button button-secondary" type="button">
-						Cancelar
-					</button>
-					<button class="button" type="submit">
-						Guardar
 					</button>
 				</div>
 			</form>
