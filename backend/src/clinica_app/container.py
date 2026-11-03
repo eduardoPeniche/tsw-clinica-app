@@ -3,7 +3,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from clinica_app.adapters.configuration.settings import agenda_settings_from_environment
-from clinica_app.adapters.notifications import ConsoleNotificationSender
+from clinica_app.adapters.notifications import (
+    ConsoleNotificationSender,
+    WebhookNotificationSender,
+)
 from clinica_app.adapters.persistence.sqlite.cita_repository import SQLiteCitaRepository
 from clinica_app.adapters.persistence.sqlite.database import SQLiteDatabase
 from clinica_app.adapters.persistence.sqlite.medico_repository import (
@@ -12,6 +15,7 @@ from clinica_app.adapters.persistence.sqlite.medico_repository import (
 from clinica_app.adapters.persistence.sqlite.paciente_repository import (
     SQLitePacienteRepository,
 )
+from clinica_app.application.ports import NotificationSender
 from clinica_app.application.use_cases import (
     ActualizarMedico,
     ActualizarPaciente,
@@ -51,6 +55,13 @@ class ApplicationContainer:
     listar_citas_por_paciente: ListarCitasPorPaciente
 
 
+def notification_sender_from_environment() -> NotificationSender:
+    url = os.getenv("NOTIFICATION_WEBHOOK_URL")
+    if not url:
+        return ConsoleNotificationSender()
+    return WebhookNotificationSender(url, os.getenv("NOTIFICATION_WEBHOOK_TOKEN"))
+
+
 def build_container(database_path: str | Path | None = None) -> ApplicationContainer:
     path = database_path or os.getenv("DATABASE_PATH", "/data/clinica.db")
     database = SQLiteDatabase(path)
@@ -59,7 +70,7 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
     pacientes = SQLitePacienteRepository(database)
     medicos = SQLiteMedicoRepository(database)
     citas = SQLiteCitaRepository(database)
-    notification_sender = ConsoleNotificationSender()
+    notification_sender = notification_sender_from_environment()
     agenda_settings = agenda_settings_from_environment()
     politica_agenda = PoliticaAgenda(
         agenda_settings.dias_atencion,
@@ -87,7 +98,7 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
             politica_agenda,
             notification_sender,
         ),
-        cancelar_cita=CancelarCita(citas),
+        cancelar_cita=CancelarCita(citas, pacientes, medicos, notification_sender),
         listar_citas_por_medico=ListarCitasPorMedico(citas),
         consultar_disponibilidad_medico=ConsultarDisponibilidadMedico(
             citas, politica_agenda

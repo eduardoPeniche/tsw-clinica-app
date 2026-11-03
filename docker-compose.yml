@@ -5,6 +5,8 @@ x-clinica-environment: &clinica-environment
   APPOINTMENT_OPENING_TIME: "09:00"
   APPOINTMENT_CLOSING_TIME: "17:00"
   APPOINTMENT_DURATION_MINUTES: "30"
+  NOTIFICATION_WEBHOOK_URL: ${NOTIFICATION_WEBHOOK_URL:-http://n8n:5678/webhook/clinica-eventos}
+  NOTIFICATION_WEBHOOK_TOKEN: ${NOTIFICATION_WEBHOOK_TOKEN:-}
 
 services:
 
@@ -45,5 +47,29 @@ services:
       BACKEND_URL: http://backend:8000
       OPENAPI_URL: http://backend:8000/openapi.json
 
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.45.7
+    entrypoint: ["tini", "--", "/bin/sh", "/n8n/arranque.sh"]
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/n8n
+    environment:
+      GENERIC_TIMEZONE: America/Merida
+      TZ: America/Merida
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      # Cuenta de demostración; la contraseña es ClinicaDemo2026.
+      N8N_INSTANCE_OWNER_MANAGED_BY_ENV: "true"
+      N8N_INSTANCE_OWNER_EMAIL: recepcion@example.com
+      N8N_INSTANCE_OWNER_FIRST_NAME: Recepción
+      N8N_INSTANCE_OWNER_LAST_NAME: Clínica
+      N8N_INSTANCE_OWNER_PASSWORD_HASH: "$$2a$$10$$xxDb2FYpu/of5dZxO6VuauICwnMEbL/5NwSAzeJetxUIkKd1PvGFa"
+      # Webhook del canal de avisos de la demo. Es público en el repositorio:
+      # cualquiera con la URL puede publicar en el canal.
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-https://discord.com/api/webhooks/1566963507885248542/uiSXUsAubrVHAFANGTU3u1nQZpi0vuZzK51LZgZ1_84Sg_QDy1klyjW19z9NPW-5SynP}
+
 volumes:
   clinica_data:
+  n8n_data:

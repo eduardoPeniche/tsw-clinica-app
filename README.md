@@ -42,8 +42,11 @@ en `http://localhost:4322`.
 ## Ejecutar pruebas
 
 ```bash
-docker compose run --rm backend python -m unittest discover -s tests
+docker compose run --rm -e NOTIFICATION_WEBHOOK_URL= backend python -m unittest discover -s tests
 ```
+
+`NOTIFICATION_WEBHOOK_URL` se vacía para que las pruebas no envíen eventos a
+n8n aunque esté configurado en `.env`.
 
 ## Generar tipos del frontend
 
@@ -63,6 +66,51 @@ Si se configuró un `BACKEND_PORT` distinto para Docker, usa ese mismo puerto en
 Dentro de Docker, ambas variables apuntan automáticamente al servicio `backend`.
 El archivo generado se versiona y se regenera cuando cambian los esquemas de
 FastAPI.
+
+## Automatizaciones con n8n
+
+`docker compose up --build` también levanta n8n, ya configurado. El backend le
+envía un evento cada vez que se crea o se cancela una cita, y n8n publica un
+aviso en el canal de Discord de recepción: una tarjeta verde para una cita
+nueva y una roja para una cancelada. La decisión está en el
+[ADR 004](docs/adr/004-notificaciones-n8n.md).
+
+El editor queda en `http://localhost:5678` (solo desde el equipo local), con la
+cuenta de demostración:
+
+| Usuario | Contraseña |
+|---|---|
+| `recepcion@example.com` | `ClinicaDemo2026` |
+
+En cada arranque, `n8n/arranque.sh` registra la credencial de Discord e importa
+y publica `n8n/workflows/clinica-eventos.json` antes de iniciar n8n. No hay
+pasos manuales, pero el flujo del repositorio reemplaza los cambios hechos en
+el editor. Para conservarlos, expórtalos antes de reiniciar:
+
+```bash
+docker compose run --rm --entrypoint n8n n8n export:workflow --id=ClinicaEventos01 --pretty --output=/n8n/workflows/clinica-eventos.json
+```
+
+El evento tiene esta forma (`evento` es `cita_creada` o `cita_cancelada`):
+
+```json
+{
+  "evento": "cita_creada",
+  "cita": { "id": "…", "fecha_hora": "2026-11-04T10:00:00-06:00", "estado": "pendiente" },
+  "paciente": { "id": "…", "nombre": "Ana López", "contacto": "ana@example.com" },
+  "medico": { "id": "…", "nombre": "Dr. Ruiz", "especialidad": "Cardiología" }
+}
+```
+
+Cancelar de nuevo una cita ya cancelada no genera otro evento. Si n8n no
+responde, la cita se registra igual y el error aparece en el log del backend.
+Desde n8n, la API se consulta en `http://backend:8000`.
+
+La URL del webhook de Discord está en `docker-compose.yml` y es pública:
+cualquiera que la tenga puede publicar en el canal. Para usar otro canal,
+define `DISCORD_WEBHOOK_URL` en `.env`. Para proteger el webhook de n8n, define
+`NOTIFICATION_WEBHOOK_TOKEN` y configura en el nodo Webhook la autenticación
+*Header Auth* con el encabezado `X-Clinica-Token`.
 
 ## Análisis de seguridad
 

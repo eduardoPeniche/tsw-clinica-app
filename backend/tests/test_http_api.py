@@ -1,12 +1,26 @@
 import tempfile
 import unittest
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
 from clinica_app.adapters.http.dependencies import get_container
 from clinica_app.container import build_container
 from clinica_app.main import app
+
+
+def _dias_habiles_futuros() -> tuple[date, date]:
+    """Devuelve dos días hábiles consecutivos a partir de mañana.
+
+    La disponibilidad marca los slots pasados como no disponibles, así que las
+    pruebas que esperan slots ocupados o libres necesitan fechas futuras.
+    """
+    dia = datetime.now(ZoneInfo("America/Merida")).date() + timedelta(days=1)
+    while dia.weekday() > 3:
+        dia += timedelta(days=1)
+    return dia, dia + timedelta(days=1)
 
 
 class HttpApiTests(unittest.TestCase):
@@ -177,6 +191,7 @@ class HttpApiTests(unittest.TestCase):
         self.assertEqual(len(response.json()), 2)
 
     def test_disponibilidad_del_medico_devuelve_slots_con_estado(self) -> None:
+        dia, _ = _dias_habiles_futuros()
         paciente = self.client.post(
             "/pacientes",
             json={
@@ -194,12 +209,12 @@ class HttpApiTests(unittest.TestCase):
             json={
                 "paciente_id": paciente["id"],
                 "medico_id": medico["id"],
-                "fecha_hora": "2026-10-01T09:00:00",
+                "fecha_hora": f"{dia}T09:00:00",
             },
         )
 
         response = self.client.get(
-            f"/medicos/{medico['id']}/disponibilidad?fecha=2026-10-01"
+            f"/medicos/{medico['id']}/disponibilidad?fecha={dia}"
         )
 
         self.assertEqual(response.status_code, 200)
@@ -212,6 +227,7 @@ class HttpApiTests(unittest.TestCase):
         self.assertEqual(payload["slots"][1]["estado"], "libre")
 
     def test_disponibilidad_por_rango_devuelve_slots_de_cada_dia(self) -> None:
+        dia, siguiente = _dias_habiles_futuros()
         paciente = self.client.post(
             "/pacientes",
             json={
@@ -229,19 +245,21 @@ class HttpApiTests(unittest.TestCase):
             json={
                 "paciente_id": paciente["id"],
                 "medico_id": medico["id"],
-                "fecha_hora": "2026-10-01T09:00:00",
+                "fecha_hora": f"{dia}T09:00:00",
             },
         )
 
         response = self.client.get(
-            f"/medicos/{medico['id']}/disponibilidad/rango?desde=2026-10-01&hasta=2026-10-02"
+            f"/medicos/{medico['id']}/disponibilidad/rango"
+            f"?desde={dia}&hasta={siguiente}"
         )
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["duracion_minutos"], 30)
         self.assertEqual(
-            [dia["fecha"] for dia in payload["dias"]], ["2026-10-01", "2026-10-02"]
+            [item["fecha"] for item in payload["dias"]],
+            [dia.isoformat(), siguiente.isoformat()],
         )
         self.assertEqual(payload["dias"][0]["slots"][0]["estado"], "ocupado")
         self.assertEqual(payload["dias"][1]["slots"][0]["estado"], "libre")
