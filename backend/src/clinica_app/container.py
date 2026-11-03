@@ -98,7 +98,7 @@ def build_container(database_path: str | Path | None = None) -> ApplicationConta
             politica_agenda,
             notification_sender,
         ),
-        cancelar_cita=CancelarCita(citas),
+        cancelar_cita=CancelarCita(citas, pacientes, medicos, notification_sender),
         listar_citas_por_medico=ListarCitasPorMedico(citas),
         consultar_disponibilidad_medico=ConsultarDisponibilidadMedico(
             citas, politica_agenda

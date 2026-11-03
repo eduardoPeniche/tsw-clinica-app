@@ -10,3 +10,10 @@ class NotificationSender(Protocol):
         paciente: Paciente,
         medico: Medico,
     ) -> None: ...
+
+    def send_appointment_cancelled(
+        self,
+        cita: Cita,
+        paciente: Paciente,
+        medico: Medico,
+    ) -> None: ...

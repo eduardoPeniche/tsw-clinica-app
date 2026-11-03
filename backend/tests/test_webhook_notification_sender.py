@@ -63,6 +63,18 @@ class WebhookNotificationSenderTests(unittest.TestCase):
         self.assertEqual(payload["paciente"]["contacto"], "ana@example.com")
         self.assertEqual(payload["medico"]["especialidad"], "Cardiología")
 
+    def test_envia_cita_cancelada(self) -> None:
+        self.cita.cancelar()
+
+        WebhookNotificationSender(self.url).send_appointment_cancelled(
+            self.cita, self.paciente, self.medico
+        )
+
+        _, payload = _RecordingHandler.requests[0]
+        self.assertEqual(payload["evento"], "cita_cancelada")
+        self.assertEqual(payload["cita"]["estado"], "cancelada")
+        self.assertEqual(payload["paciente"]["nombre"], "Ana López")
+
     def test_omite_token_si_no_esta_configurado(self) -> None:
         WebhookNotificationSender(self.url).send_appointment_created(
             self.cita, self.paciente, self.medico

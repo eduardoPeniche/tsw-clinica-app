@@ -34,8 +34,8 @@ def _evento(
 class WebhookNotificationSender:
     """Envía los eventos de citas como JSON a un webhook, por ejemplo de n8n.
 
-    Un fallo del webhook no debe impedir registrar la cita: se informa en
-    `stderr` y la operación continúa.
+    Un fallo del webhook no debe impedir crear o cancelar la cita: se informa
+    en `stderr` y la operación continúa.
     """
 
     def __init__(
@@ -55,6 +55,14 @@ class WebhookNotificationSender:
         medico: Medico,
     ) -> None:
         self._send(_evento("cita_creada", cita, paciente, medico))
+
+    def send_appointment_cancelled(
+        self,
+        cita: Cita,
+        paciente: Paciente,
+        medico: Medico,
+    ) -> None:
+        self._send(_evento("cita_cancelada", cita, paciente, medico))
 
     def _send(self, payload: dict[str, object]) -> None:
         headers = {"Content-Type": "application/json"}

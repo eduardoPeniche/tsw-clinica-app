@@ -26,6 +26,7 @@ from clinica_app.domain.policies import PoliticaAgenda
 class RecordingNotificationSender:
     def __init__(self) -> None:
         self.appointments: list[tuple[Cita, Paciente, Medico]] = []
+        self.cancellations: list[tuple[Cita, Paciente, Medico]] = []
 
     def send_appointment_created(
         self,
@@ -34,6 +35,14 @@ class RecordingNotificationSender:
         medico: Medico,
     ) -> None:
         self.appointments.append((cita, paciente, medico))
+
+    def send_appointment_cancelled(
+        self,
+        cita: Cita,
+        paciente: Paciente,
+        medico: Medico,
+    ) -> None:
+        self.cancellations.append((cita, paciente, medico))
 
 
 class SQLiteIntegrationTests(unittest.TestCase):
@@ -110,12 +119,18 @@ class SQLiteIntegrationTests(unittest.TestCase):
             self.politica_agenda,
             self.notification_sender,
         ).ejecutar(paciente.id, medico.id, horario)
-        cancelar = CancelarCita(self.citas)
+        cancelar = CancelarCita(
+            self.citas, self.pacientes, self.medicos, self.notification_sender
+        )
 
         cancelar.ejecutar(cita.id)
         cita_cancelada = cancelar.ejecutar(cita.id)
 
         self.assertEqual(cita_cancelada.estado, EstadoCita.CANCELADA)
+        self.assertEqual(
+            self.notification_sender.cancellations,
+            [(cita_cancelada, paciente, medico)],
+        )
         self.assertFalse(
             self.citas.medico_tiene_cita_activa_en_intervalo(
                 medico.id,
