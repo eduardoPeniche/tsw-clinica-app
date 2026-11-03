@@ -1,0 +1,309 @@
+{
+  "id": "ClinicaEventos01",
+  "name": "Clínica: eventos de citas",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clinica-eventos",
+        "options": {}
+      },
+      "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0001",
+      "name": "Evento de la clínica",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "7d9c3b8e-2f4a-4c1d-8e6b-0c6a2a1e0001"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0002",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "rightValue": "cita_creada",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cita_creada"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0008",
+                    "leftValue": "={{ $json.body.evento }}",
+                    "rightValue": "cita_cancelada",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cita_cancelada"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "otro_evento"
+        }
+      },
+      "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0003",
+      "name": "Tipo de evento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "titulo",
+              "value": "📅 Nueva cita agendada",
+              "type": "string",
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0100"
+            },
+            {
+              "name": "color",
+              "value": 3066993,
+              "type": "number",
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0101"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0102",
+              "name": "paciente",
+              "value": "={{ $json.body.paciente.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0103",
+              "name": "contacto",
+              "value": "={{ $json.body.paciente.contacto }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0104",
+              "name": "medico",
+              "value": "={{ $json.body.medico.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0105",
+              "name": "especialidad",
+              "value": "={{ $json.body.medico.especialidad }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0106",
+              "name": "fecha",
+              "value": "={{ DateTime.fromISO($json.body.cita.fecha_hora).setLocale('es').toFormat(\"cccc d 'de' LLLL, HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0107",
+              "name": "cita_id",
+              "value": "={{ $json.body.cita.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0006",
+      "name": "Cita nueva",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "titulo",
+              "value": "❌ Cita cancelada",
+              "type": "string",
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0200"
+            },
+            {
+              "name": "color",
+              "value": 15158332,
+              "type": "number",
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0201"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0202",
+              "name": "paciente",
+              "value": "={{ $json.body.paciente.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0203",
+              "name": "contacto",
+              "value": "={{ $json.body.paciente.contacto }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0204",
+              "name": "medico",
+              "value": "={{ $json.body.medico.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0205",
+              "name": "especialidad",
+              "value": "={{ $json.body.medico.especialidad }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0206",
+              "name": "fecha",
+              "value": "={{ DateTime.fromISO($json.body.cita.fecha_hora).setLocale('es').toFormat(\"cccc d 'de' LLLL, HH:mm\") }}",
+              "type": "string"
+            },
+            {
+              "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0207",
+              "name": "cita_id",
+              "value": "={{ $json.body.cita.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0009",
+      "name": "Cita cancelada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "operation": "sendLegacy",
+        "content": "",
+        "options": {
+          "username": "Recepción Clínica"
+        },
+        "embeds": {
+          "values": [
+            {
+              "inputMethod": "json",
+              "json": "={{ JSON.stringify({ title: $json.titulo, color: $json.color, fields: [ { name: 'Paciente', value: $json.paciente, inline: true }, { name: 'Contacto', value: $json.contacto, inline: true }, { name: 'Médico', value: $json.medico + ' · ' + $json.especialidad }, { name: 'Fecha y hora', value: $json.fecha } ], footer: { text: 'Cita ' + $json.cita_id }, timestamp: $now.toISO() }) }}"
+            }
+          ]
+        }
+      },
+      "id": "5f0c1a52-3f0e-4a8e-9a51-0c6a2a1e0007",
+      "name": "Avisar a recepción",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -20
+      ],
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "DiscordClinica01",
+          "name": "Discord Clínica"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Evento de la clínica": {
+      "main": [
+        [
+          {
+            "node": "Tipo de evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de evento": {
+      "main": [
+        [
+          {
+            "node": "Cita nueva",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cita cancelada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cita nueva": {
+      "main": [
+        [
+          {
+            "node": "Avisar a recepción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cita cancelada": {
+      "main": [
+        [
+          {
+            "node": "Avisar a recepción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
